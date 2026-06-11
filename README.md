@@ -35,19 +35,3 @@ The score validation engine computes participant data arrays across three struct
 
 ## 🛠️ Architecture Setup
 
-To run or replicate this setup under your custom developer keys:
-
-1. Create a free project in the [Firebase Console](https://console.firebase.google.com/).
-2. Enable the **Firestore Database** in **Test Mode** to configure standard stream permissions.
-3. Register a Web App (`</>`) to generate your app's credentials array.
-4. Replace the `firebaseConfig` properties block near line 344 in `index.html`:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
