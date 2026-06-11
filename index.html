@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WC2026 Prediction Championship</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #03070d;
+    --card: rgba(13, 21, 39, 0.75);
+    --card-glow: rgba(0, 242, 254, 0.1);
+    --border: rgba(30, 41, 59, 0.7);
+    --border-focus: #00f2fe;
+    
+    --gold: #ffd700;
+    --gold-glow: rgba(255, 215, 0, 0.3);
+    --neon-blue: #00f2fe;
+    --accent: #38ef7d;
+    --red: #ff4757;
+    
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    background: var(--bg); 
+    color: var(--text-primary); 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    min-height: 100vh; 
+    overflow-x: hidden;
+  }
+
+  /* CINEMATIC BACKGROUND IMMERSION WITH UPLOADED ASSETS */
+  .bg-cinematic {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: -2;
+    display: flex;
+    overflow: hidden;
+  }
+  .bg-panel {
+    flex: 1;
+    height: 100%;
+    background-size: cover;
+    background-position: center top;
+    position: relative;
+    filter: grayscale(15%) contrast(115%) brightness(30%);
+    animation: zoomPan 28s ease-in-out infinite alternate;
+  }
+  
+  .panel-left { 
+    background-image: url('ChatGPT-Image-May-20_-2026-at-01_34_52-PM-1068x610.jpeg'); 
+    animation-delay: 0s;
+  }
+  .panel-right { 
+    background-image: url('hq720.jpg'); 
+    animation-delay: -7s;
+  }
+  
+  .bg-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: radial-gradient(circle at 50% 30%, rgba(6, 11, 19, 0.3) 0%, rgba(3, 7, 13, 0.96) 80%);
+    z-index: -1;
+  }
+
+  @keyframes zoomPan {
+    0% { transform: scale(1.02) translateY(0); }
+    50% { transform: scale(1.12) translateY(-10px); }
+    100% { transform: scale(1.02) translateY(0); }
+  }
+
+  /* NAV BAR */
+  nav { 
+    background: rgba(6, 11, 19, 0.85); 
+    backdrop-filter: blur(20px); 
+    border-bottom: 1px solid var(--border); 
+    padding: 0 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    height: 70px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+  }
+  .nav-logo { 
+    font-family: 'Bebas Neue', cursive; 
+    font-size: 28px; 
+    color: var(--text-primary); 
+    letter-spacing: 2px; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+  }
+  .nav-logo span { color: var(--gold); text-shadow: 0 0 15px var(--gold-glow); }
+  .nav-tabs { display: flex; gap: 8px; }
+  .nav-tab { 
+    background: none; 
+    border: none; 
+    color: var(--text-secondary); 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    font-size: 14px; 
+    font-weight: 600; 
+    padding: 10px 18px; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: all .2s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+  .nav-tab.active { color: var(--gold); background: rgba(255, 215, 0, 0.12); border: 1px solid rgba(255, 215, 0, 0.4); text-shadow: 0 0 8px rgba(255,215,0,0.3); }
+  .admin-badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px; margin-left: 4px; }
+
+  /* HERO */
+  .hero { padding: 60px 24px 40px; text-align: center; position: relative; }
+  .hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--neon-blue); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 12px; font-weight: 700; text-shadow: 0 0 12px rgba(0, 242, 254, 0.6); }
+  .hero-title { font-family: 'Bebas Neue', cursive; font-size: clamp(54px, 7.5vw, 92px); color: var(--text-primary); line-height: 0.95; letter-spacing: 4px; }
+  .hero-title span { color: var(--gold); text-shadow: 0 0 35px var(--gold-glow); }
+  .hero-sub { color: var(--text-secondary); font-size: 15px; margin-top: 14px; font-weight: 500; letter-spacing: 0.5px; }
+  .ball { font-size: 54px; margin-bottom: 12px; display: inline-block; filter: drop-shadow(0 0 20px rgba(0,242,254,0.6)); animation: float 4s ease-in-out infinite; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+
+  /* CONTAINER PAGES */
+  .page { display: none; padding: 0 32px 60px; max-width: 1400px; margin: 0 auto; }
+  .page.active { display: block; animation: pageEnter 0.4s ease forwards; }
+  @keyframes pageEnter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* CARDS */
+  .card { 
+    background: var(--card); 
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border); 
+    border-radius: 16px; 
+    padding: 24px; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(0, 242, 254, 0.25);
+    box-shadow: 0 20px 45px rgba(0,0,0,0.5), 0 0 30px rgba(0, 242, 254, 0.03);
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, transparent, var(--border-focus), transparent); opacity: 0.4;
+  }
+  .card-title { font-family: 'Bebas Neue', cursive; font-size: 24px; color: var(--text-primary); letter-spacing: 1px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+  /* CHIPS & INTERFACES */
+  .upload-zone { border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px; padding: 50px; text-align: center; cursor: pointer; transition: all .25s ease; background: rgba(13, 21, 39, 0.3); }
+  .upload-zone:hover { border-color: var(--neon-blue); background: rgba(0, 242, 254, 0.04); box-shadow: 0 0 25px rgba(0, 242, 254, 0.1); }
+  .upload-zone .upload-icon { font-size: 48px; margin-bottom: 16px; }
+  #fileInput { display: none; }
+
+  .participants-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 20px; }
+  .participant-chip { 
+    background: rgba(255,255,255,0.03); 
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    padding: 16px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+  }
+  .participant-chip:hover { 
+    border-color: var(--neon-blue); 
+    background: rgba(0,242,254,0.06); 
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 15px rgba(0,242,254,0.05);
+  }
+  .participant-chip .name { font-weight: 700; font-size: 15px; color: var(--text-primary); }
+  .participant-chip .pts { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gold); font-weight: 700; }
+  
+  .rank-badge { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; margin-right: 12px; }
+  .rank-1 { background: var(--gold); color: #000; box-shadow: 0 0 15px var(--gold); }
+  .rank-2 { background: #cbd5e1; color: #000; }
+  .rank-3 { background: #cd7f32; color: #fff; }
+  .rank-other { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+
+  /* LEADERBOARD TABLE */
+  .lb-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .lb-table th { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; padding: 14px 16px; border-bottom: 2px solid var(--border); font-weight: 600; }
+  .lb-table td { padding: 16px; font-size: 15px; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .lb-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .lb-table .pname { font-weight: 700; color: var(--text-primary); }
+  .lb-table .pts-cell { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--gold); font-size: 18px; text-shadow: 0 0 10px rgba(255,215,0,0.2); }
+  .lb-table .sub-cell { font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); font-size: 14px; }
+
+  /* DASHBOARD STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .stat-card { background: var(--card); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 16px; padding: 24px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .stat-card .val { font-family: 'Bebas Neue', cursive; font-size: 44px; color: var(--neon-blue); line-height: 1; letter-spacing: 1px; text-shadow: 0 0 15px rgba(0,242,254,0.3); }
+  .stat-card .lbl { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+
+  /* WINNER PODIUM CROWN BAR */
+  .winner-crown-bar { 
+    background: linear-gradient(135deg, rgba(13,21,39,0.95) 0%, rgba(30,58,138,0.4) 100%); 
+    border: 1px solid rgba(255,215,0,0.4); 
+    border-radius: 16px; 
+    padding: 32px; 
+    text-align: center; 
+    margin-bottom: 32px; 
+    box-shadow: 0 0 35px rgba(255,215,0,0.15);
+  }
+  .winner-crown-bar .wc-label { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; font-weight: 700; }
+  .winner-crown-bar .wc-name { font-family: 'Bebas Neue', cursive; font-size: 60px; color: var(--text-primary); line-height: 1.1; margin: 6px 0; letter-spacing: 2px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+  .winner-crown-bar .wc-pts { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--neon-blue); font-weight: 700; text-shadow: 0 0 10px rgba(0,242,254,0.4); }
+
+  /* PODIUM GRAPHICS */
+  .podium { display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin: 24px 0; height: 200px; }
+  .podium-place { display: flex; flex-direction: column; align-items: center; width: 100px; }
+  .podium-avatar { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; border: 2px solid; background: #0b1220; }
+  .podium-1 .podium-avatar { border-color: var(--gold); width: 68px; height: 68px; font-size: 22px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); }
+  .podium-2 .podium-avatar { border-color: #cbd5e1; box-shadow: 0 0 15px rgba(203,213,225,0.2); }
+  .podium-3 .podium-avatar { border-color: #cd7f32; box-shadow: 0 0 15px rgba(205,127,50,0.2); }
+  .podium-block { width: 100%; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', cursive; font-size: 32px; color: rgba(255,255,255,0.15); margin-top: 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-bottom: none; }
+  .podium-1 .podium-block { height: 110px; background: linear-gradient(to top, rgba(255,215,0,0.08), rgba(255,215,0,0.25)); border-color: rgba(255,215,0,0.4); color: var(--gold); }
+  .podium-2 .podium-block { height: 80px; }
+  .podium-3 .podium-block { height: 55px; }
+  .podium-name { font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+
+  /* MATCH CARDS (ADMIN / DETAILS) */
+  .match-section { margin-bottom: 32px; }
+  .section-header { font-family: 'Bebas Neue', cursive; font-size: 22px; color: var(--text-secondary); letter-spacing: 2px; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .match-card { background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; }
+  .match-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
+  .match-teams { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .team-name { font-size: 14px; font-weight: 700; color: var(--text-primary); flex: 1; }
+  .team-name.away { text-align: right; }
+  
+  .score-inputs { display: flex; align-items: center; gap: 8px; }
+  .score-input { width: 46px; height: 38px; background: #060b13; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 16px; font-weight: 700; text-align: center; font-family: 'JetBrains Mono', monospace; outline: none; transition: border-color 0.2s; }
+  .score-input:focus { border-color: var(--border-focus); box-shadow: 0 0 10px rgba(0, 242, 254, 0.3); }
+  .score-dash { color: var(--text-muted); font-weight: 700; }
+  
+  .match-status { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; }
+  .status-pending { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+  .status-played { background: rgba(56,239,125,0.15); color: var(--accent); border: 1px solid rgba(56,239,125,0.3); }
+
+  /* BUTTONS */
+  .btn { padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: 'Plus Jakarta Sans', sans-serif; transition: all .15s ease; display: inline-flex; align-items: center; gap: 8px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--gold); color: #000; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+  .btn-primary:hover { background: #e6c200; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4); }
+  .save-btn { background: rgba(255,255,255,0.08); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .save-btn:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+
+  /* ALERTS & FIELDS */
+  .alert { padding: 14px 20px; border-radius: 12px; font-size: 14px; margin-bottom: 24px; font-weight: 500; border: 1px solid transparent; }
+  .alert-info { background: rgba(0, 242, 254, 0.08); border-color: rgba(0, 242, 254, 0.2); color: var(--neon-blue); }
+  .alert-warn { background: rgba(255, 71, 87, 0.08); border-color: rgba(255, 71, 87, 0.2); color: var(--red); }
+  .alert-success { background: rgba(56, 239, 125, 0.08); border-color: rgba(56, 239, 125, 0.2); color: var(--accent); }
+  
+  .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+  .breakdown-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .breakdown-item .bi-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; font-weight: 600; }
+  .breakdown-item .bi-val { font-family: 'Bebas Neue', cursive; font-size: 32px; color: var(--text-primary); line-height: 1; }
+  .breakdown-item .bi-val.gold { color: var(--gold); text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+
+  /* ADMIN MODAL LOGIN */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(3, 7, 13, 0.9); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(12px); }
+  .modal-overlay.hidden { display: none; }
+  .modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 40px; width: 100%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+  .modal-title { font-family: 'Bebas Neue', cursive; font-size: 32px; color: var(--text-primary); letter-spacing: 1px; margin-bottom: 6px; }
+  .modal-field { margin-bottom: 20px; }
+  .modal-field label { display: block; font-size: 11px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px; font-weight: 700; }
+  .modal-field input { width: 100%; background: #060b13; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: #fff; font-size: 14px; outline: none; }
+  .modal-field input:focus { border-color: var(--border-focus); }
+  .modal-error { background: rgba(255,71,87,0.12); border: 1px solid rgba(255,71,87,0.25); color: var(--red); font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 16px; display: none; }
+
+  .empty-state { text-align: center; padding: 80px 24px; color: var(--text-secondary); }
+  .empty-state .es-icon { font-size: 54px; margin-bottom: 16px; opacity: 0.5; }
+  .inner-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .inner-tab { background: none; border: none; color: var(--text-secondary); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600; padding: 12px 20px; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+  .inner-tab.active { color: var(--neon-blue); border-bottom-color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,242,254,0.3); }
+  .score-readonly { width: 46px; height: 38px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 16px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; }
+
+  /* CONFIG / SECURITY AREA */
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="bg-cinematic">
+  <div class="bg-panel panel-left"></div>
+  <div class="bg-panel panel-right"></div>
+</div>
+<div class="bg-overlay"></div>
+
+<nav>
+  <div class="nav-logo">⚽ <span>WC2026</span> PREDICTIONS</div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Leaderboard</button>
+      <button class="nav-tab" id="uploadNavBtn" style="display:none;" onclick="showPage('upload')">📁 Upload</button>
+      <button class="nav-tab" id="adminNavBtn" onclick="handleAdminNav()">⚙️ Admin <span class="admin-badge">LIVE</span></button>
+    </div>
+    <div id="navAdminUser" style="display:none; align-items:center; gap:10px;" class="sub-cell">
+      <span>🔑 Admin Authorized</span> <button class="save-btn" style="padding:4px 8px;" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <span class="ball">⚽</span>
+  <div class="hero-eyebrow">The Last Dance · Championship Arena</div>
+  <div class="hero-title">FIFA World Cup <span>2026</span></div>
+  <div class="hero-sub" id="heroSub">Connecting to Cloud Database Instance...</div>
+</div>
+
+<div class="page active" id="page-dashboard">
+  <div id="dashboardEmpty" class="empty-state">
+    <div class="es-icon">📊</div>
+    <p>No data loaded yet.</p>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:6px;">Awaiting administrator profile configuration uploading sequence.</p>
+  </div>
+  <div id="dashboardContent" style="display:none">
+    <div id="winnerBar"></div>
+    <div class="stats-row" id="statsRow"></div>
+    
+    <div style="display:grid;grid-template-columns: 1fr 1fr;gap:24px;margin-bottom:24px" id="podiumRow">
+      <div class="card">
+        <div class="card-title">🥇 Top 3 Podium</div>
+        <div class="podium" id="podiumEl"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 Standings Analytics</div>
+        <canvas id="barChart" height="200" style="width:100%; height:200px; max-height:200px;"></canvas>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-title">👥 All Competitors <span style="font-size:13px;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;margin-left:8px">— select for breakdown</span></div>
+      <div class="participants-grid" id="participantsGrid"></div>
+    </div>
+  </div>
+  <div id="detailView" style="display:none"></div>
+</div>
+
+<div class="page" id="page-leaderboard">
+  <div id="lbEmpty" class="empty-state"><div class="es-icon">🏆</div><p>Leaderboard will evaluate once sheets are uploaded.</p></div>
+  <div id="lbContent" style="display:none">
+    <div class="card">
+      <div class="card-title">🏆 Championship Leaderboard</div>
+      <div style="overflow-x:auto">
+        <table class="lb-table" id="lbTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participant</th>
+              <th>Phase 1</th>
+              <th>Phase 2</th>
+              <th>Bonuses</th>
+              <th>Total Pts</th>
+              <th>Exact Score</th>
+              <th>Correct Out</th>
+            </tr>
+          </thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-upload">
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title">📁 Upload Participant Sheets</div>
+    <div class="alert alert-info">ℹ️ Upload one or multiple <strong>.xlsx</strong> prediction rosters matching the tournament structure layout. Data aggregates directly on drop.</div>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📂</div>
+      <p style="font-size:16px; font-weight:700;">Drag and drop participant .xlsx templates here</p>
+      <p style="margin-top:6px;font-size:13px; color:var(--text-secondary)">or browse system storage files</p>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx" multiple onchange="handleFiles(this.files)">
+  </div>
+  <div class="card" id="uploadedList" style="display:none">
+    <div class="card-title">✅ Tracked Profiles</div>
+    <div id="uploadedItems"></div>
+  </div>
+</div>
+
+<div class="page" id="page-admin">
+  <div id="adminModeAlert" class="alert alert-warn">⚙️ Global Administration Terminal — Enter finalized fixture scores below. System states recalculate across all endpoints dynamically.</div>
+  
+  <div class="inner-tabs">
+    <button class="inner-tab active" onclick="showAdminTab('group')">Group Stage Fixtures</button>
+    <button class="inner-tab" onclick="showAdminTab('knockout')">Knockout Stage Bracket</button>
+    <button class="inner-tab" onclick="showAdminTab('security')">🛡️ Security & Settings</button>
+  </div>
+  
+  <div id="adminTab-group"><div id="adminGroupMatches"></div></div>
+  <div id="adminTab-knockout" style="display:none"><div id="adminKOMatches"></div></div>
+  
+  <div id="adminTab-security" style="display:none">
+    <div class="card">
+      <div class="card-title">⚙️ Operator Access Profile Settings</div>
+      <p style="font-size:14px; color:var(--text-secondary); margin-bottom:16px;">Modify authorization parameters used for authentication tokens across the administration panel endpoints.</p>
+      
+      <div id="securityAlert" class="alert alert-success" style="display:none;">✅ Operator credentials modified successfully.</div>
+      
+      <div class="config-grid">
+        <div class="modal-field">
+          <label>Update User Handle</label>
+          <input type="text" id="cfgAdminUser" value="Admin">
+        </div>
+        <div class="modal-field">
+          <label>Update Passkey</label>
+          <input type="password" id="cfgAdminPass" value="" placeholder="••••••••">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:10px;" onclick="updateAdminCredentials()">Save Access Parameters</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="loginModal">
+  <div class="modal-box">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div class="modal-title">⚙️ Operator Access</div>
+      <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:18px;" onclick="closeLoginModal()">✕</button>
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px;">Please authenticate to allow verification adjustments.</p>
+    <div class="modal-error" id="loginError">Invalid system access credentials.</div>
+    <div class="modal-field">
+      <label>User Handle</label>
+      <input type="text" id="loginUser" autocomplete="username">
+    </div>
+    <div class="modal-field">
+      <label>Passkey</label>
+      <input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="doLogin()">Authorize</button>
+  </div>
+</div>
+
+<script>
+// ========== STATE ARCHITECTURE & CLOUD CONNECTOR ==========
+const firebaseConfig = {
+  apiKey: "AIzaSyCwNXCtnx8uzpdk6Ze3bEUwEzMsocn9yH0",
+  authDomain: "wc2026-predictions-c204b.firebaseapp.com",
+  projectId: "wc2026-predictions-c204b",
+  storageBucket: "wc2026-predictions-c204b.firebasestorage.app",
+  messagingSenderId: "774748825639",
+  appId: "1:774748825639:web:07f8fd1adab9dede914602",
+  measurementId: "G-EW64H0ZR7G"
+};
+
+// Start Firebase Engine Linkages
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let state = {
+  participants: {},
+  actualResults: {},      
+  koActualResults: {},    
+  actualChampion: null,
+  isAdmin: false,
+};
+
+// Hidden cache architecture for authentication mapping references
+let cloudCredentialsCache = { user: 'Admin', pass: 'Admin!@#123' };
+
+// ========== LIVE CLOUD STREAM ENGINE ==========
+function connectAndSyncFirebase() {
+  // 1. Sync Competitor Prediction Collections
+  db.collection("participants").onSnapshot((snapshot) => {
+    state.participants = {};
+    snapshot.forEach((doc) => {
+      state.participants[doc.id] = doc.data();
+    });
+    uiEngineRefreshPipeline();
+  }, (error) => console.error("Participant stream failure:", error));
+
+  // 2. Sync Official Tournament Fixture Outcomes
+  db.collection("tournamentState").doc("results").onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      state.actualResults = data.actualResults || {};
+      state.koActualResults = data.koActualResults || {};
+      state.actualChampion = data.actualChampion || null;
+    } else {
+      // Create empty document initialization block if empty configuration
+      db.collection("tournamentState").doc("results").set({ actualResults:{}, koActualResults:{}, actualChampion:null });
+    }
+    uiEngineRefreshPipeline();
+  }, (error) => console.error("State rules configuration stream failure:", error));
+
+  // 3. Sync Secure Operator Credentials Configuration Data
+  db.collection("tournamentState").doc("security").onSnapshot((doc) => {
+    if (doc.exists) {
+      cloudCredentialsCache = doc.data();
+      document.getElementById('cfgAdminUser').value = cloudCredentialsCache.user || 'Admin';
+    } else {
+      // Seed initial data directly upstream securely if never created before
+      db.collection("tournamentState").doc("security").set({ user: 'Admin', pass: 'Admin!@#123' });
+    }
+  });
+}
+
+function uiEngineRefreshPipeline() {
+  refreshDashboard();
+  refreshLeaderboard();
+  buildAdminMatches();
+  updateUploadedList();
+}
+
+// Fire system live listeners as page loads
+window.addEventListener('DOMContentLoaded', () => {
+  connectAndSyncFirebase();
+});
+
+// ========== AUTHENTICATION SERVICES ==========
+function handleAdminNav() {
+  if (state.isAdmin) {
+    _showPageDirect('admin');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('adminNavBtn').classList.add('active');
+  } else {
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('loginUser').focus();
+  }
+}
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.add('hidden');
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+function doLogin() {
+  const inputUser = document.getElementById('loginUser').value.trim();
+  const inputPass = document.getElementById('loginPass').value;
+
+  if (inputUser === cloudCredentialsCache.user && inputPass === cloudCredentialsCache.pass) {
+    state.isAdmin = true;
+    closeLoginModal();
+    
+    document.getElementById('navAdminUser').style.display = 'flex';
+    document.getElementById('uploadNavBtn').style.display = 'flex';
+    
+    _showPageDirect('admin');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('adminNavBtn').classList.add('active');
+    uiEngineRefreshPipeline();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginPass').value = '';
+  }
+}
+function adminLogout() {
+  state.isAdmin = false;
+  document.getElementById('navAdminUser').style.display = 'none';
+  document.getElementById('uploadNavBtn').style.display = 'none';
+  
+  _showPageDirect('dashboard');
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+  uiEngineRefreshPipeline();
+}
+
+function updateAdminCredentials() {
+  const newUser = document.getElementById('cfgAdminUser').value.trim();
+  const newPass = document.getElementById('cfgAdminPass').value;
+  
+  if (newUser === '') {
+    alert('Username handle parameter cannot be left blank.');
+    return;
+  }
+
+  let updatedPackage = { user: newUser };
+  if (newPass !== '') {
+    updatedPackage.pass = newPass;
+  } else {
+    updatedPackage.pass = cloudCredentialsCache.pass; // Retain past verification credentials mapping
+  }
+  
+  db.collection("tournamentState").doc("security").set(updatedPackage).then(() => {
+    const alertEl = document.getElementById('securityAlert');
+    alertEl.style.display = 'block';
+    document.getElementById('cfgAdminPass').value = '';
+    setTimeout(() => { alertEl.style.display = 'none'; }, 4000);
+  }).catch(err => alert("Error updating credentials: " + err.message));
+}
+
+// ========== ROUTING SERVICES ==========
+function _showPageDirect(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+}
+function showPage(id) {
+  if (id === 'admin') { handleAdminNav(); return; }
+  if (id === 'upload' && !state.isAdmin) { return; }
+  
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  _showPageDirect(id);
+  if (id === 'dashboard' || id === 'leaderboard') uiEngineRefreshPipeline();
+}
+function showAdminTab(id) {
+  document.querySelectorAll('[id^="adminTab-"]').forEach(el => el.style.display = 'none');
+  document.getElementById('adminTab-' + id).style.display = 'block';
+  document.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// ========== DROPZONE HANDLERS ==========
+const uploadZone = document.getElementById('uploadZone');
+if (uploadZone) {
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); });
+  uploadZone.addEventListener('drop', e => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+}
+
+function handleFiles(files) {
+  if (!state.isAdmin) return;
+  [...files].forEach(file => {
+    if (!file.name.endsWith('.xlsx')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+        parseParticipant(raw, file.name);
+      } catch(err) {
+        alert('File parsing error: ' + err.message);
+      }
+    };
+    reader.readAsBinaryString(file);
+  });
+}
+
+function parseParticipant(raw, filename) {
+  let participantName = filename.replace('.xlsx','').replace(/_/g,' ');
+  const headerRow = raw[0] || [];
+  for (let c = 0; c < headerRow.length; c++) {
+    const v = headerRow[c];
+    if (v && typeof v === 'string' && v.includes('NAME')) {
+      const parts = v.split('|');
+      if (parts[1] && parts[1].trim() !== 'NAME' && parts[1].trim() !== '') {
+        participantName = parts[1].trim();
+      }
+      break;
+    }
+  }
+
+  let dataStartRow = -1, colMatchId = 0, colHome = 1, colAway = 2, colMyHome = 3, colMyAway = 4;
+  for (let r = 0; r < raw.length; r++) {
+    const row = raw[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 'Match ID') {
+        colMatchId = c; colHome = c+1; colAway = c+2; colMyHome = c+3; colMyAway = c+4;
+        dataStartRow = r+1; break;
+      }
+    }
+    if (dataStartRow > 0) break;
+  }
+
+  const groupMatches = [];
+  const koMatches = [];
+  const r32Picks = [];
+  const groupTopPicks = {};
+  let predictedChampion = null;
+
+  if (dataStartRow >= 0) {
+    for (let r = dataStartRow; r < raw.length; r++) {
+      const row = raw[r];
+      if (!row || !row[colMatchId]) continue;
+      const mid = String(row[colMatchId]).trim();
+      if (/^[A-L][1-6]$/.test(mid)) {
+        groupMatches.push({ id: mid, home: row[colHome] || '', away: row[colAway] || '', myHome: row[colMyHome], myAway: row[colMyAway] });
+      }
+    }
+  }
+
+  for (let r = 0; r < raw.length; r++) {
+    const row = raw[r]; if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 'Stage') {
+        for (let kr = r+1; kr < raw.length; kr++) {
+          const krow = raw[kr]; if (!krow || !krow[c]) continue;
+          const stageVal = String(krow[c]).trim();
+          if (/^(R32|R16|QF|SF|Final|3rd)/.test(stageVal)) {
+            koMatches.push({ id: stageVal, stage: stageVal.split(' ')[0], home: krow[c+1] || '', away: krow[c+2] || '', myHome: krow[c+3], myAway: krow[c+4], penWinner: krow[c+5] || null, predWinner: krow[c+6] || null });
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  for (let r = 0; r < raw.length; r++) {
+    const row = raw[r]; if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 'My Predicted R32 Team') {
+        for (let pr = r+1; pr < raw.length && r32Picks.length < 32; pr++) {
+          if (raw[pr] && raw[pr][c]) r32Picks.push(String(raw[pr][c]).trim());
+        }
+        break;
+      }
+    }
+  }
+
+  for (let r = 0; r < raw.length; r++) {
+    const row = raw[r]; if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 'Group' && raw[r][c+1] === 'My 1st') {
+        for (let gr = r+1; gr < raw.length; gr++) {
+          if (raw[gr] && /^Group [A-L]$/.test(String(raw[gr][c]))) {
+            groupTopPicks[String(raw[gr][c]).trim()] = { first: raw[gr][c+1] || null, second: raw[gr][c+2] || null };
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  const finalMatch = koMatches.find(m => m.stage === 'Final' || m.id.toLowerCase().includes('final'));
+  if (finalMatch) predictedChampion = finalMatch.predWinner || finalMatch.home;
+
+  // Direct Write Modification Upstream to Cloud Collection
+  db.collection("participants").doc(participantName).set({
+    name: participantName,
+    filename,
+    groupMatches,
+    koMatches,
+    r32Picks,
+    groupTopPicks,
+    predictedChampion
+  }).then(() => console.log(`Participant configuration profile ${participantName} synchronized successfully.`));
+}
+
+// ========== DATA PIPELINE & MATH CALCULATORS ==========
+function scoreParticipant(p) {
+  let groupMatchPts = 0, exactScoresPts = 0, r32Pts = 0, groupTopPts = 0, exactCount = 0, resultCount = 0, koPts = 0, koExact = 0;
+
+  if(!p.groupMatches) return { groupMatchPts:0, exactScoresPts:0, r32Pts:0, groupTopPts:0, koPts:0, phase1Total:0, total:0, exactCount:0, resultCount:0 };
+
+  p.groupMatches.forEach(m => {
+    const actual = state.actualResults[m.id];
+    if (!actual || actual.home === null || actual.home === undefined || actual.home === '') return;
+    const ah = parseInt(actual.home), aa = parseInt(actual.away), mh = parseInt(m.myHome), ma = parseInt(m.myAway);
+    if (isNaN(ah) || isNaN(aa) || isNaN(mh) || isNaN(ma)) return;
+
+    if (mh === ah && ma === aa) { exactScoresPts += 2; exactCount++; resultCount++; }
+    else if ((ah > aa && mh > ma) || (ah < aa && mh < ma) || (ah === aa && mh === ma)) { groupMatchPts += 1; resultCount++; }
+  });
+
+  const qualified = new Set();
+  Object.keys(state.koActualResults).forEach(mid => {
+    if (mid.startsWith('R32')) {
+      if (state.koActualResults[mid].homeTeam) qualified.add(state.koActualResults[mid].homeTeam);
+      if (state.koActualResults[mid].awayTeam) qualified.add(state.koActualResults[mid].awayTeam);
+    }
+  });
+
+  if (qualified.size > 0 && p.r32Picks) {
+    p.r32Picks.forEach(team => { if (qualified.has(team)) r32Pts++; });
+  }
+
+  if (p.koMatches) {
+    p.koMatches.forEach(m => {
+      const actual = state.koActualResults[m.id];
+      if (!actual || actual.home === null || actual.home === undefined || actual.home === '') return;
+      const ah = parseInt(actual.home), aa = parseInt(actual.away), mh = parseInt(m.myHome), ma = parseInt(m.myAway);
+      if (isNaN(ah) || isNaN(aa) || isNaN(mh) || isNaN(ma)) return;
+
+      if (mh === ah && ma === aa) { koPts += 2; koExact++; }
+      else if (((ah > aa && mh > ma) || (ah < aa && mh < ma) || (ah === aa && mh === ma))) { koPts += 1; }
+
+      const s = m.stage.toUpperCase();
+      let advValue = s === 'R16' || s === 'QF' ? 1 : s === 'SF' ? 2 : s.includes('FINAL') && !s.includes('3RD') ? 4 : 0;
+      if (advValue > 0 && !(actual.homeTeam === m.home && actual.awayTeam === m.away)) {
+        if (qualified.has(m.home) || m.home === actual.homeTeam || m.home === actual.awayTeam) koPts += advValue;
+        if (qualified.has(m.away) || m.away === actual.homeTeam || m.away === actual.awayTeam) koPts += advValue;
+      }
+    });
+  }
+
+  if (state.actualChampion && p.predictedChampion && String(p.predictedChampion).trim() === state.actualChampion) {
+    koPts += 10;
+  }
+
+  const phase1Total = groupMatchPts + exactScoresPts + r32Pts + groupTopPts;
+  return { groupMatchPts, exactScoresPts, r32Pts, groupTopPts, koPts, phase1Total, total: phase1Total + koPts, exactCount: exactCount + koExact, resultCount };
+}
+
+// ========== ENGINE UI SYNCERS ==========
+function getAllScores() {
+  return Object.entries(state.participants).map(([name, p]) => ({ name, ...scoreParticipant(p) }))
+    .sort((a,b) => b.total - a.total || b.exactCount - a.exactCount);
+}
+
+function refreshDashboard() {
+  const names = Object.keys(state.participants);
+  if (names.length === 0) {
+    document.getElementById('dashboardEmpty').style.display = '';
+    document.getElementById('dashboardContent').style.display = 'none';
+    document.getElementById('heroSub').textContent = `0 User Modules Loaded`;
+    return;
+  }
+  document.getElementById('dashboardEmpty').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+
+  const scores = getAllScores();
+  const totalMatches = Object.keys(state.actualResults).filter(k => state.actualResults[k].home !== '').length;
+  document.getElementById('heroSub').textContent = `${names.length} User Modules Loaded · ${totalMatches} Matches Finalized`;
+
+  const leader = scores[0];
+  document.getElementById('winnerBar').innerHTML = leader ? `
+    <div class="winner-crown-bar">
+      <div class="wc-label">🏆 Current Championship Leader</div>
+      <div class="wc-name">${leader.name}</div>
+      <div class="wc-pts">${leader.total} Accumulative Points</div>
+    </div>` : '';
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="val">${names.length}</div><div class="lbl">Profiles</div></div>
+    <div class="stat-card"><div class="val">${totalMatches}</div><div class="lbl">Processed</div></div>
+    <div class="stat-card"><div class="val">${leader ? leader.total : 0}</div><div class="lbl">Top Peak</div></div>
+  `;
+
+  const top3 = scores.slice(0,3); while(top3.length < 3) top3.push(null);
+  const order = [top3[1], top3[0], top3[2]], classes = ['podium-2', 'podium-1', 'podium-3'], labels = ['2nd', '1st', '3rd'];
+  document.getElementById('podiumEl').innerHTML = order.map((p, i) => p ? `
+    <div class="podium-place ${classes[i]}">
+      <div class="podium-avatar">${p.name.slice(0,2).toUpperCase()}</div>
+      <div class="podium-name">${p.name}</div>
+      <div class="podium-name" style="color:var(--gold); font-size:11px">${p.total} Pts</div>
+      <div class="podium-block">${labels[i]}</div>
+    </div>` : `<div class="podium-place ${classes[i]}"><div class="podium-avatar" style="opacity:0.2">?</div><div class="podium-block">${labels[i]}</div></div>`).join('');
+
+  document.getElementById('participantsGrid').innerHTML = scores.map((s, i) => `
+    <div class="participant-chip" onclick="showDetail('${s.name}')">
+      <div style="display:flex;align-items:center;">
+        <div class="rank-badge ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other'}">${i+1}</div>
+        <div class="name">${s.name}</div>
+      </div>
+      <div class="pts">${s.total} Pts</div>
+    </div>`).join('');
+
+  drawBar(scores);
+}
+
+function drawBar(scores) {
+  const canvas = document.getElementById('barChart'); if (!canvas) return;
+  const ctx = canvas.getContext('2d'), top8 = scores.slice(0, 8), W = canvas.offsetWidth, H = 200;
+  canvas.width = W; canvas.height = H; ctx.clearRect(0,0,W,H);
+  if (!top8.length) return;
+
+  const max = Math.max(...top8.map(s => s.total), 1), barW = Math.floor((W - 20) / top8.length) - 6;
+  top8.forEach((s, i) => {
+    const x = 10 + i * (barW + 6), barH = (s.total / max) * (H - 50), y = H - barH - 25;
+    ctx.fillStyle = i === 0 ? '#ffd700' : '#1e3a8a';
+    ctx.fillRect(x, y, barW, barH);
+    ctx.fillStyle = '#94a3b8'; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText(s.total, x + barW/2, y - 6);
+    ctx.fillText(s.name.slice(0,5), x + barW/2, H - 8);
+  });
+}
+
+function showDetail(name) {
+  const p = state.participants[name]; if (!p) return;
+  const s = scoreParticipant(p);
+  document.getElementById('dashboardContent').style.display = 'none';
+  const dv = document.getElementById('detailView'); dv.style.display = 'block';
+
+  dv.innerHTML = `
+    <div class="card" style="margin-top:16px">
+      <button class="save-btn" style="margin-bottom:20px" onclick="backToDashboard()">← Return to Dashboard</button>
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px">
+        <div class="rank-badge rank-1" style="width:44px; height:44px; font-size:18px;">${name.slice(0,2).toUpperCase()}</div>
+        <div><h2>${name} Profile Analysis</h2><p class="sub-cell">${s.total} Verified Points</p></div>
+      </div>
+      <div class="breakdown-grid">
+        <div class="breakdown-item"><div class="bi-label">Accumulated Points</div><div class="bi-val gold">${s.total}</div></div>
+        <div class="breakdown-item"><div class="bi-label">Group Stage Results</div><div class="bi-val">${s.groupMatchPts}</div></div>
+        <div class="breakdown-item"><div class="bi-label">Exact Score Bonuses</div><div class="bi-val">${s.exactScoresPts}</div></div>
+        <div class="breakdown-item"><div class="bi-label">Knockout Stage Points</div><div class="bi-val">${s.koPts}</div></div>
+      </div>
+    </div>`;
+}
+function backToDashboard() {
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+}
+
+function refreshLeaderboard() {
+  const names = Object.keys(state.participants);
+  if (names.length === 0) {
+    document.getElementById('lbEmpty').style.display = '';
+    document.getElementById('lbContent').style.display = 'none';
+    return;
+  }
+  document.getElementById('lbEmpty').style.display = 'none';
+  document.getElementById('lbContent').style.display = 'block';
+
+  document.getElementById('lbBody').innerHTML = getAllScores().map((s, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td class="pname">${s.name}</td>
+      <td class="sub-cell">${s.phase1Total}</td>
+      <td class="sub-cell">${s.koPts}</td>
+      <td class="sub-cell">—</td>
+      <td class="pts-cell">${s.total}</td>
+      <td class="sub-cell">${s.exactCount}</td>
+      <td class="sub-cell">${s.resultCount}</td>
+    </tr>`).join('');
+}
+
+// ========== DYNAMIC SYSTEM WRITERS ==========
+function buildAdminMatches() {
+  const sample = Object.values(state.participants)[0]; 
+  const ro = !state.isAdmin;
+
+  if (!sample) {
+    document.getElementById('adminGroupMatches').innerHTML = `<div class="empty-state"><p>Please upload at least one Participant sheet in the "Upload" tab to initialize match structures layouts.</p></div>`;
+    document.getElementById('adminKOMatches').innerHTML = '';
+    return;
+  }
+
+  let groups = {};
+  sample.groupMatches.forEach(m => { const l = m.id[0]; if (!groups[l]) groups[l] = []; groups[l].push(m); });
+
+  let html = ro ? `<div class="alert alert-info">🔒 Read-only authorization viewport. Login as administration tier to update state.</div>` : '';
+  Object.entries(groups).sort().forEach(([letter, matches]) => {
+    html += `<div class="match-section"><div class="section-header">GROUP ${letter}</div><div class="match-grid">`;
+    matches.forEach(m => {
+      const res = state.actualResults[m.id] || {home: '', away: ''};
+      const has = res.home !== undefined && res.home !== '';
+      const fields = ro ? `<div class="score-readonly">${has?res.home:'–'}</div><span class="score-dash">:</span><div class="score-readonly">${has?res.away:'–'}</div>`
+                        : `<input type="number" class="score-input" id="ah_${m.id}" value="${res.home}"><span class="score-dash">:</span><input type="number" class="score-input" id="aa_${m.id}" value="${res.away}">`;
+      html += `
+        <div class="match-card">
+          <div class="match-id">${m.id}</div>
+          <div class="match-teams">
+            <div class="team-name">${m.home}</div>
+            <div class="score-inputs">${fields}</div>
+            <div class="team-name away">${m.away}</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="match-status ${has?'status-played':'status-pending'}">${has?'✓ Finalized':'Unresolved'}</span>
+            ${ro ? '' : `<button class="save-btn" onclick="saveResult('${m.id}','${m.home}','${m.away}')">Update</button>`}
+          </div>
+        </div>`;
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('adminGroupMatches').innerHTML = html;
+
+  let koHtml = '';
+  let stages = { R32: [], R16: [], QF: [], SF: [], Final: [], '3rd': [] };
+  sample.koMatches.forEach(m => { if(stages[m.stage]) stages[m.stage].push(m); });
+  
+  Object.entries(stages).forEach(([stg, matches]) => {
+    if(!matches.length) return;
+    koHtml += `<div class="match-section"><div class="section-header">${stg} Round</div><div class="match-grid">`;
+    matches.forEach(m => {
+      const res = state.koActualResults[m.id] || {home:'', away:'', winner:''};
+      const has = res.home !== undefined && res.home !== '';
+      const safe = m.id.replace(/[^a-z0-9]/gi,'_');
+      const fields = ro ? `<div class="score-readonly">${has?res.home:'–'}</div><span class="score-dash">:</span><div class="score-readonly">${has?res.away:'–'}</div>`
+                        : `<input type="number" class="score-input" id="kah_'+safe+'" value="${res.home}"><span class="score-dash">:</span><input type="number" class="score-input" id="kaa_'+safe+'" value="${res.away}">`;
+      koHtml += `
+        <div class="match-card">
+          <div class="match-id">${m.id}</div>
+          <div class="match-teams">
+            <div class="team-name">${m.home || 'TBD'}</div>
+            <div class="score-inputs">${fields}</div>
+            <div class="team-name away">${m.away || 'TBD'}</div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <span style="font-size:11px; color:var(--text-secondary)">Advancing Decider:</span>
+            ${ro ? `<span class="sub-cell" style="margin-left:6px;">${res.winner || 'None'}</span>` : `<input type="text" class="score-input" style="width:140px; font-size:12px;" id="kpw_${safe}" value="${res.winner || ''}" placeholder="Winner Name">`}
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="match-status ${has?'status-played':'status-pending'}">${has?'✓ Finalized':'Unresolved'}</span>
+            ${ro ? '' : `<button class="save-btn" onclick="saveKOResult('${m.id}','${m.home}','${m.away}')">Update</button>`}
+          </div>
+        </div>`;
+    });
+    koHtml += '</div></div>';
+  });
+
+  koHtml += `
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">🏆 World Champion Decider</div>
+      ${ro ? `<div class="pts-cell">${state.actualChampion || 'Undecided'}</div>` : `
+        <div style="display:flex; gap:12px;"><input type="text" class="score-input" style="width:240px; text-align:left; padding-left:12px;" id="championInput" value="${state.actualChampion || ''}" placeholder="Team Name">
+        <button class="btn btn-primary" onclick="saveChampion()">Set Champion</button></div>`}
+    </div>`;
+  document.getElementById('adminKOMatches').innerHTML = koHtml;
+}
+
+// ========== MUTATION PROCESSORS (State Cloud Hooks) ==========
+function saveResult(matchId, homeTeam, awayTeam) {
+  const hv = document.getElementById('ah_'+matchId).value.trim();
+  const av = document.getElementById('aa_'+matchId).value.trim();
+  if (hv === '' || av === '') return;
+  
+  state.actualResults[matchId] = { home: parseInt(hv), away: parseInt(av), homeTeam, awayTeam };
+  
+  db.collection("tournamentState").doc("results").set({
+    actualResults: state.actualResults
+  }, { merge: true });
+}
+
+function saveKOResult(matchId, homeTeam, awayTeam) {
+  const safe = matchId.replace(/[^a-z0-9]/gi,'_');
+  const hv = document.getElementById('kah_'+safe).value.trim();
+  const av = document.getElementById('kaa_'+safe).value.trim();
+  const win = document.getElementById('kpw_'+safe).value.trim();
+  if (hv === '' || av === '') return;
+  
+  state.koActualResults[matchId] = { home: parseInt(hv), away: parseInt(av), winner: win, homeTeam, awayTeam };
+  
+  db.collection("tournamentState").doc("results").set({
+    koActualResults: state.koActualResults
+  }, { merge: true });
+}
+
+function saveChampion() {
+  const v = document.getElementById('championInput').value.trim();
+  state.actualChampion = v || null;
+  
+  db.collection("tournamentState").doc("results").set({
+    actualChampion: state.actualChampion
+  }, { merge: true }).then(() => {
+    if (v) alert('Championship Crown finalized: ' + v);
+  });
+}
+
+// ========== ATOMIC RESIZE GRAPH EVENT ==========
+window.addEventListener('resize', () => {
+  const scores = getAllScores();
+  if (scores.length > 0 && document.getElementById('page-dashboard').classList.contains('active')) {
+    drawBar(scores);
+  }
+});
+
+function updateUploadedList() {
+  const names = Object.keys(state.participants);
+  if (!names.length) { document.getElementById('uploadedList').style.display='none'; return; }
+  document.getElementById('uploadedList').style.display='block';
+  document.getElementById('uploadedItems').innerHTML = names.map(n => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border)">
+      <div><strong>${n}</strong><p class="sub-cell" style="font-size:12px;">${state.participants[n].filename || ''}</p></div>
+      <button class="save-btn" style="border-color:var(--red); color:var(--red);" onclick="removeParticipant('${n}')">Drop</button>
+    </div>`).join('');
+}
+
+function removeParticipant(name) {
+  if (!confirm('Drop profile execution array data for ' + name + '?')) return;
+  db.collection("participants").doc(name).delete().then(() => {
+    console.log(`Removed participant: ${name}`);
+  });
+}
+</script>
+</body>
+</html>
