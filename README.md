@@ -32,6 +32,3 @@ The score validation engine computes participant data arrays across three struct
 | **World Champion** | Final Tournament Champion Match | `+10 Pts` |
 
 ---
-
-## 🛠️ Architecture Setup
-
