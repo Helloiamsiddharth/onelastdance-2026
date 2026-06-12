@@ -1014,11 +1014,27 @@ function saveResult(matchId, homeTeam, awayTeam) {
   const av = document.getElementById('aa_'+matchId).value.trim();
   if (hv === '' || av === '') return;
   
-  state.actualResults[matchId] = { home: parseInt(hv), away: parseInt(av), homeTeam, awayTeam };
+  const homeScore = parseInt(hv);
+  const awayScore = parseInt(av);
   
-  db.collection("tournamentState").doc("results").set({
-    actualResults: state.actualResults
-  }, { merge: true });
+  // Local state update protective buffer
+  state.actualResults[matchId] = { home: homeScore, away: awayScore, homeTeam, awayTeam };
+  
+  // Direct targeted field dot-notation write to prevent wiping out other matches
+  const updateData = {};
+  updateData[`actualResults.${matchId}`] = {
+    home: homeScore,
+    away: awayScore,
+    homeTeam: homeTeam,
+    awayTeam: awayTeam
+  };
+  
+  db.collection("tournamentState").doc("results").update(updateData)
+    .then(() => console.log(`Match ${matchId} successfully saved upstream.`))
+    .catch(err => {
+      // Fallback if the results document doesn't exist yet
+      db.collection("tournamentState").doc("results").set(updateData, { merge: true });
+    });
 }
 
 function saveKOResult(matchId, homeTeam, awayTeam) {
@@ -1028,21 +1044,38 @@ function saveKOResult(matchId, homeTeam, awayTeam) {
   const win = document.getElementById('kpw_'+safe).value.trim();
   if (hv === '' || av === '') return;
   
-  state.koActualResults[matchId] = { home: parseInt(hv), away: parseInt(av), winner: win, homeTeam, awayTeam };
+  const homeScore = parseInt(hv);
+  const awayScore = parseInt(av);
   
-  db.collection("tournamentState").doc("results").set({
-    koActualResults: state.koActualResults
-  }, { merge: true });
+  state.koActualResults[matchId] = { home: homeScore, away: awayScore, winner: win, homeTeam, awayTeam };
+  
+  // Direct targeted field dot-notation write for knockout bracket matches
+  const updateData = {};
+  updateData[`koActualResults.${matchId}`] = {
+    home: homeScore,
+    away: awayScore,
+    winner: win,
+    homeTeam: homeTeam,
+    awayTeam: awayTeam
+  };
+  
+  db.collection("tournamentState").doc("results").update(updateData)
+    .then(() => console.log(`Knockout Match ${matchId} successfully saved upstream.`))
+    .catch(err => {
+      db.collection("tournamentState").doc("results").set(updateData, { merge: true });
+    });
 }
 
 function saveChampion() {
   const v = document.getElementById('championInput').value.trim();
   state.actualChampion = v || null;
   
-  db.collection("tournamentState").doc("results").set({
+  db.collection("tournamentState").doc("results").update({
     actualChampion: state.actualChampion
-  }, { merge: true }).then(() => {
+  }).then(() => {
     if (v) alert('Championship Crown finalized: ' + v);
+  }).catch(err => {
+    db.collection("tournamentState").doc("results").set({ actualChampion: state.actualChampion }, { merge: true });
   });
 }
 
