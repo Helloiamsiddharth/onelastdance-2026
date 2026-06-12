@@ -454,25 +454,14 @@ function connectAndSyncFirebase() {
   db.collection("tournamentState").doc("results").onSnapshot(doc => {
     if (doc.exists) {
       const d = doc.data();
-      // Only update state if the incoming data is non-empty or state is currently empty
-      // This prevents a transient empty Firestore read from wiping valid in-memory scores
-      const incomingResults = d.actualResults || {};
-      const incomingKO = d.koActualResults || {};
-      if (Object.keys(incomingResults).length > 0 || Object.keys(state.actualResults).length === 0) {
-        state.actualResults = incomingResults;
-      }
-      if (Object.keys(incomingKO).length > 0 || Object.keys(state.koActualResults).length === 0) {
-        state.koActualResults = incomingKO;
-      }
-      state.actualChampion = d.actualChampion || null;
-    } else {
-      // Document doesn't exist yet — initialize it (don't wipe state)
-      db.collection("tournamentState").doc("results").set({
-        actualResults: state.actualResults,
-        koActualResults: state.koActualResults,
-        actualChampion: null
-      });
+      // Read-only: just sync state from Firestore. Writes only happen via
+      // saveResult / saveKOResult / saveChampion — never from this listener.
+      state.actualResults   = d.actualResults   || {};
+      state.koActualResults = d.koActualResults || {};
+      state.actualChampion  = d.actualChampion  || null;
     }
+    // If doc doesn't exist: do nothing. _writeField's catch block will
+    // initialise it the first time an admin saves a result.
     uiRefresh();
   });
   db.collection("tournamentState").doc("security").onSnapshot(doc => {
@@ -1320,51 +1309,62 @@ function buildAdminMatches() {
 }
 
 // ============================================================
-// SAVE HELPERS
-// ============================================================
-
-// Always use set() with merge:true and a fully-nested object — this is safe
-// regardless of whether the document exists, and never wipes sibling fields.
-// Do NOT use dot-notation keys with set(merge:true) — Firestore treats them
-// as literal field names and can corrupt the data structure.
-
-function _saveResults() {
-  // Persist the entire state in one atomic merge — nothing gets wiped
-  return db.collection("tournamentState").doc("results").set({
-    actualResults: state.actualResults,
-    koActualResults: state.koActualResults,
-    actualChampion: state.actualChampion
-  }, { merge: true });
-}
-
-// ============================================================
 // SAVE HANDLERS
 // ============================================================
+// CRITICAL RULES:
+//  1. Use update() with FieldPath dot-notation — this touches ONE field only,
+//     never overwrites sibling fields in the map.
+//  2. If the doc doesn't exist yet, set() with the FULL current state as
+//     a one-time initialiser, then retry the specific update.
+//  3. NEVER call set({actualResults: state.actualResults}) — that overwrites
+//     the entire map. Only write the single key that changed.
+
+const RESULTS_DOC = () => db.collection("tournamentState").doc("results");
+
+function _writeField(dotKey, value) {
+  // update() with a dot-notation key safely writes ONE nested field
+  const patch = {};
+  patch[dotKey] = value;
+  return RESULTS_DOC().update(patch).catch(() => {
+    // Doc doesn't exist yet — create it with full current state, then patch
+    return RESULTS_DOC().set({
+      actualResults:   state.actualResults,
+      koActualResults: state.koActualResults,
+      actualChampion:  state.actualChampion
+    }).then(() => RESULTS_DOC().update(patch));
+  });
+}
+
 function saveResult(matchId, homeTeam, awayTeam) {
   if (!state.isAdmin) return;
   const hv = document.getElementById('ah_' + matchId).value.trim();
   const av = document.getElementById('aa_' + matchId).value.trim();
   if (hv === '' || av === '') return;
-  state.actualResults[matchId] = { home: parseInt(hv), away: parseInt(av), homeTeam, awayTeam };
-  _saveResults().catch(err => console.error('saveResult failed:', err));
+  const record = { home: parseInt(hv), away: parseInt(av), homeTeam, awayTeam };
+  state.actualResults[matchId] = record;                       // update in-memory first
+  _writeField(`actualResults.${matchId}`, record)              // write ONLY this one match
+    .catch(err => console.error('saveResult failed:', err));
 }
 
 function saveKOResult(matchId, homeTeam, awayTeam) {
   if (!state.isAdmin) return;
   const safe = matchId.replace(/[^a-z0-9]/gi, '_');
-  const hv = document.getElementById('kah_' + safe).value.trim();
-  const av = document.getElementById('kaa_' + safe).value.trim();
+  const hv  = document.getElementById('kah_' + safe).value.trim();
+  const av  = document.getElementById('kaa_' + safe).value.trim();
   const win = document.getElementById('kpw_' + safe).value.trim();
   if (hv === '' || av === '') return;
-  state.koActualResults[matchId] = { home: parseInt(hv), away: parseInt(av), winner: win, homeTeam, awayTeam };
-  _saveResults().catch(err => console.error('saveKOResult failed:', err));
+  const record = { home: parseInt(hv), away: parseInt(av), winner: win, homeTeam, awayTeam };
+  state.koActualResults[matchId] = record;
+  _writeField(`koActualResults.${matchId}`, record)
+    .catch(err => console.error('saveKOResult failed:', err));
 }
 
 function saveChampion() {
   if (!state.isAdmin) return;
   const v = document.getElementById('championInput').value.trim();
   state.actualChampion = v || null;
-  _saveResults().catch(err => console.error('saveChampion failed:', err));
+  _writeField('actualChampion', state.actualChampion)
+    .catch(err => console.error('saveChampion failed:', err));
   launchConfetti(3500);
 }
 
