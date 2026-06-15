@@ -1278,7 +1278,7 @@ function buildAdminMatches() {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="match-status ${has?'status-played':'status-pending'}" id="st_${m.id}">${has?'✓ Finalized':'Pending'}</span>
-          ${ro?'':`<button class="save-btn" onclick="saveResult('${m.id}','${m.home.replace(/'/g,"\\'")}','${m.away.replace(/'/g,"\\'")}')">Save</button>`}
+          ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${m.home.replace(/"/g,'&quot;')}" data-away="${m.away.replace(/"/g,'&quot;')}" onclick="saveResult(this.dataset.mid,this.dataset.home,this.dataset.away)">Save</button>`}
         </div>
       </div>`;
     });
@@ -1312,7 +1312,7 @@ function buildAdminMatches() {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="match-status ${has?'status-played':'status-pending'}" id="kst_${safe}">${has?'✓ Finalized':'Pending'}</span>
-          ${ro?'':`<button class="save-btn" onclick="saveKOResult('${m.id}','${(m.home||'TBD').replace(/'/g,"\\'")}','${(m.away||'TBD').replace(/'/g,"\\'")}')">Save</button>`}
+          ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${(m.home||'TBD').replace(/"/g,'&quot;')}" data-away="${(m.away||'TBD').replace(/"/g,'&quot;')}" onclick="saveKOResult(this.dataset.mid,this.dataset.home,this.dataset.away)">Save</button>`}
         </div>
       </div>`;
     });
