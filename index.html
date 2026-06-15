@@ -699,6 +699,7 @@ function doLogin() {
   const p = document.getElementById('loginPass').value;
   if (u === cloudCredentialsCache.user && p === cloudCredentialsCache.pass) {
     state.isAdmin = true;
+    state._adminBuilt = false; // force full rebuild with editable inputs
     closeLoginModal();
     document.getElementById('navAdminUser').style.display='flex';
     document.getElementById('uploadNavBtn').style.display='flex';
@@ -713,6 +714,7 @@ function doLogin() {
 }
 function adminLogout() {
   state.isAdmin = false;
+  state._adminBuilt = false; // force full rebuild in read-only mode
   document.getElementById('navAdminUser').style.display='none';
   document.getElementById('uploadNavBtn').style.display='none';
   _showPageDirect('dashboard');
@@ -1237,18 +1239,26 @@ function buildAdminMatches() {
   if(!sample){
     document.getElementById('adminGroupMatches').innerHTML=`<div class="empty-state"><p>Upload at least one participant sheet to initialize match structures.</p></div>`;
     document.getElementById('adminKOMatches').innerHTML='';
+    state._adminBuilt = false;
     return;
   }
 
-  // If the admin panel inputs already exist in the DOM, just patch their
-  // displayed values without destroying and re-creating the DOM — this
-  // prevents the "Save fires, onSnapshot re-renders, input resets" race.
-  const alreadyBuilt = !!document.getElementById('adminGroupMatches').querySelector('.match-card');
-  if (alreadyBuilt && !ro) {
+  // After the first full build, subsequent Firestore onSnapshot calls just
+  // patch values in-place so inputs aren't destroyed while admin is editing.
+  if (state._adminBuilt && !ro) {
     _patchAdminInputs(sample);
     return;
   }
+  state._adminBuilt = false; // will be set true after full build below
 
+
+  // KEY FIX: if admin inputs already exist, patch values in-place
+  // instead of rebuilding DOM — prevents the save->onSnapshot->re-render
+  // race that was resetting typed values and showing – for all matches.
+  if (!ro && sample.groupMatches[0] && document.getElementById('ah_' + sample.groupMatches[0].id)) {
+    _patchAdminInputs(sample);
+    return;
+  }
   let groups={};
   sample.groupMatches.forEach(m=>{const l=m.id[0];if(!groups[l])groups[l]=[];groups[l].push(m);});
   let html=ro?`<div class="alert alert-info">🔒 View-only. Login as admin to update scores.</div>`:'';
@@ -1275,6 +1285,7 @@ function buildAdminMatches() {
     html+='</div></div>';
   });
   document.getElementById('adminGroupMatches').innerHTML=html;
+  state._adminBuilt = true;
 
   let koh=''; const stages={R32:[],R16:[],QF:[],SF:[],Final:[],'3rd':[]};
   sample.koMatches.forEach(m=>{if(stages[m.stage])stages[m.stage].push(m);});
