@@ -1239,6 +1239,16 @@ function buildAdminMatches() {
     document.getElementById('adminKOMatches').innerHTML='';
     return;
   }
+
+  // If the admin panel inputs already exist in the DOM, just patch their
+  // displayed values without destroying and re-creating the DOM — this
+  // prevents the "Save fires, onSnapshot re-renders, input resets" race.
+  const alreadyBuilt = !!document.getElementById('adminGroupMatches').querySelector('.match-card');
+  if (alreadyBuilt && !ro) {
+    _patchAdminInputs(sample);
+    return;
+  }
+
   let groups={};
   sample.groupMatches.forEach(m=>{const l=m.id[0];if(!groups[l])groups[l]=[];groups[l].push(m);});
   let html=ro?`<div class="alert alert-info">🔒 View-only. Login as admin to update scores.</div>`:'';
@@ -1257,7 +1267,7 @@ function buildAdminMatches() {
           <div class="team-name away">${m.away}</div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="match-status ${has?'status-played':'status-pending'}">${has?'✓ Finalized':'Pending'}</span>
+          <span class="match-status ${has?'status-played':'status-pending'}" id="st_${m.id}">${has?'✓ Finalized':'Pending'}</span>
           ${ro?'':`<button class="save-btn" onclick="saveResult('${m.id}','${m.home}','${m.away}')">Save</button>`}
         </div>
       </div>`;
@@ -1290,7 +1300,7 @@ function buildAdminMatches() {
             :`<input type="text" class="score-input" style="width:140px;font-size:12px" id="kpw_${safe}" value="${res.winner||''}" placeholder="Winner...">`}
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="match-status ${has?'status-played':'status-pending'}">${has?'✓ Finalized':'Pending'}</span>
+          <span class="match-status ${has?'status-played':'status-pending'}" id="kst_${safe}">${has?'✓ Finalized':'Pending'}</span>
           ${ro?'':`<button class="save-btn" onclick="saveKOResult('${m.id}','${m.home}','${m.away}')">Save</button>`}
         </div>
       </div>`;
@@ -1306,6 +1316,44 @@ function buildAdminMatches() {
       </div>`}
   </div>`;
   document.getElementById('adminKOMatches').innerHTML=koh;
+}
+
+// Patch only the status badges and input values without destroying the DOM.
+// Called by buildAdminMatches when inputs already exist, to avoid re-render races.
+function _patchAdminInputs(sample) {
+  sample.groupMatches.forEach(m => {
+    const res = state.actualResults[m.id] || { home:'', away:'' };
+    const has = res.home !== undefined && res.home !== '';
+    const hEl = document.getElementById('ah_' + m.id);
+    const aEl = document.getElementById('aa_' + m.id);
+    const stEl = document.getElementById('st_' + m.id);
+    // Only overwrite the input if it isn't currently focused (user is typing)
+    if (hEl && document.activeElement !== hEl) hEl.value = res.home;
+    if (aEl && document.activeElement !== aEl) aEl.value = res.away;
+    if (stEl) {
+      stEl.textContent = has ? '✓ Finalized' : 'Pending';
+      stEl.className = 'match-status ' + (has ? 'status-played' : 'status-pending');
+    }
+  });
+  sample.koMatches.forEach(m => {
+    const res = state.koActualResults[m.id] || { home:'', away:'', winner:'' };
+    const has = res.home !== undefined && res.home !== '';
+    const safe = m.id.replace(/[^a-z0-9]/gi, '_');
+    const hEl = document.getElementById('kah_' + safe);
+    const aEl = document.getElementById('kaa_' + safe);
+    const wEl = document.getElementById('kpw_' + safe);
+    const stEl = document.getElementById('kst_' + safe);
+    if (hEl && document.activeElement !== hEl) hEl.value = res.home;
+    if (aEl && document.activeElement !== aEl) aEl.value = res.away;
+    if (wEl && document.activeElement !== wEl) wEl.value = res.winner || '';
+    if (stEl) {
+      stEl.textContent = has ? '✓ Finalized' : 'Pending';
+      stEl.className = 'match-status ' + (has ? 'status-played' : 'status-pending');
+    }
+  });
+  // Update champion input too
+  const chEl = document.getElementById('championInput');
+  if (chEl && document.activeElement !== chEl) chEl.value = state.actualChampion || '';
 }
 
 // ============================================================
