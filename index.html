@@ -21,6 +21,8 @@
     --neon-blue: #00f2fe;
     --accent: #38ef7d;
     --red: #ff4757;
+    --purple: #a855f7;
+    --orange: #f97316;
     --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --text-muted: #64748b;
@@ -32,8 +34,8 @@
   /* BG */
   .bg-cinematic { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; display:flex; overflow:hidden; }
   .bg-panel { flex:1; height:100%; background-size:cover; background-position:center top; filter:grayscale(15%) contrast(115%) brightness(25%); animation:zoomPan 28s ease-in-out infinite alternate; }
-  .panel-left { background-image: url('ChatGPT-Image-May-20_-2026-at-01_34_52-PM-1068x610.jpeg'); }
-  .panel-right { background-image: url('hq720.jpg'); animation-delay:-7s; }
+  .panel-left { background: linear-gradient(135deg, #0a1628, #1a2d5a); }
+  .panel-right { background: linear-gradient(135deg, #1a0a28, #2d1a5a); animation-delay:-7s; }
   .bg-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:radial-gradient(circle at 50% 30%, rgba(6,11,19,0.3) 0%, rgba(3,7,13,0.97) 75%); z-index:-1; }
   @keyframes zoomPan { 0%{transform:scale(1.02) translateY(0)} 50%{transform:scale(1.12) translateY(-10px)} 100%{transform:scale(1.02) translateY(0)} }
 
@@ -46,6 +48,7 @@
   .nav-tab:hover { color:var(--text-primary); background:rgba(255,255,255,0.06); }
   .nav-tab.active { color:var(--gold); background:rgba(255,215,0,0.12); border:1px solid rgba(255,215,0,0.4); }
   .admin-badge { background:var(--red); color:#fff; font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; margin-left:4px; }
+  .user-badge { background:rgba(56,239,125,0.2); color:var(--accent); font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; margin-left:4px; }
 
   /* HERO */
   .hero { padding:60px 24px 40px; text-align:center; position:relative; }
@@ -141,6 +144,10 @@
   .btn:active { transform:scale(.97); }
   .btn-primary { background:var(--gold); color:#000; box-shadow:0 4px 15px rgba(255,215,0,0.3); }
   .btn-primary:hover { background:#e6c200; }
+  .btn-danger { background:rgba(255,71,87,0.15); color:var(--red); border:1px solid rgba(255,71,87,0.3); }
+  .btn-danger:hover { background:rgba(255,71,87,0.25); }
+  .btn-success { background:rgba(56,239,125,0.15); color:var(--accent); border:1px solid rgba(56,239,125,0.3); }
+  .btn-success:hover { background:rgba(56,239,125,0.25); }
   .save-btn { background:rgba(255,255,255,0.08); color:var(--text-primary); border:1px solid var(--border); border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s; }
   .save-btn:hover { background:var(--gold); color:#000; border-color:var(--gold); }
 
@@ -149,23 +156,18 @@
   .alert-info { background:rgba(0,242,254,0.08); border-color:rgba(0,242,254,0.2); color:var(--neon-blue); }
   .alert-warn { background:rgba(255,71,87,0.08); border-color:rgba(255,71,87,0.2); color:var(--red); }
   .alert-success { background:rgba(56,239,125,0.08); border-color:rgba(56,239,125,0.2); color:var(--accent); }
-
-  /* BREAKDOWN */
-  .breakdown-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-  .breakdown-item { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; }
-  .breakdown-item .bi-label { font-size:11px; color:var(--text-secondary); text-transform:uppercase; font-family:'JetBrains Mono',monospace; margin-bottom:6px; }
-  .breakdown-item .bi-val { font-family:'Bebas Neue',cursive; font-size:32px; color:var(--text-primary); line-height:1; }
-  .breakdown-item .bi-val.gold { color:var(--gold); }
+  .alert-gold { background:rgba(255,215,0,0.08); border-color:rgba(255,215,0,0.2); color:var(--gold); }
 
   /* MODAL */
   .modal-overlay { position:fixed; inset:0; background:rgba(3,7,13,0.9); z-index:200; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(12px); }
   .modal-overlay.hidden { display:none; }
-  .modal-box { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:40px; width:100%; max-width:420px; box-shadow:0 20px 50px rgba(0,0,0,0.6); }
+  .modal-box { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:40px; width:100%; max-width:460px; box-shadow:0 20px 50px rgba(0,0,0,0.6); }
   .modal-title { font-family:'Bebas Neue',cursive; font-size:32px; color:var(--text-primary); letter-spacing:1px; margin-bottom:6px; }
   .modal-field { margin-bottom:20px; }
   .modal-field label { display:block; font-size:11px; font-family:'JetBrains Mono',monospace; text-transform:uppercase; color:var(--text-secondary); margin-bottom:8px; font-weight:700; }
-  .modal-field input { width:100%; background:#060b13; border:1px solid var(--border); border-radius:10px; padding:12px 16px; color:#fff; font-size:14px; outline:none; font-family:'Plus Jakarta Sans',sans-serif; }
-  .modal-field input:focus { border-color:var(--border-focus); }
+  .modal-field input, .modal-field select { width:100%; background:#060b13; border:1px solid var(--border); border-radius:10px; padding:12px 16px; color:#fff; font-size:14px; outline:none; font-family:'Plus Jakarta Sans',sans-serif; }
+  .modal-field input:focus, .modal-field select:focus { border-color:var(--border-focus); }
+  .modal-field select option { background:#060b13; }
   .modal-error { background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.25); color:var(--red); font-size:13px; padding:10px; border-radius:8px; margin-bottom:16px; display:none; }
 
   .empty-state { text-align:center; padding:80px 24px; color:var(--text-secondary); }
@@ -176,7 +178,7 @@
   .score-readonly { width:46px; height:38px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); font-size:16px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; }
   .config-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:16px; }
 
-  /* ====== LIVE SCORES PANEL ====== */
+  /* LIVE SCORES PANEL */
   #liveScoresPanel { margin-bottom:32px; }
   .live-scores-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
   .live-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px var(--accent); animation:pulse 1.5s ease-in-out infinite; display:inline-block; margin-right:8px; }
@@ -200,21 +202,16 @@
   .scores-loading { display:flex; align-items:center; gap:10px; color:var(--text-muted); font-size:13px; padding:20px; }
   .spinner { width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--neon-blue); border-radius:50%; animation:spin .8s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg)} }
-  .scores-error { color:var(--text-muted); font-size:13px; padding:16px; background:rgba(255,255,255,0.02); border-radius:10px; border:1px solid var(--border); }
 
-  /* ====== PLAYER PROFILE DETAIL (NEW EXPANDED) ====== */
-  #detailView .detail-wrapper { animation:pageEnter .4s ease forwards; }
+  /* PLAYER PROFILE DETAIL */
   .profile-hero { display:flex; align-items:center; gap:24px; margin-bottom:32px; padding:28px; background:linear-gradient(135deg,rgba(13,21,39,0.95),rgba(30,58,138,0.3)); border:1px solid rgba(0,242,254,0.2); border-radius:16px; position:relative; overflow:hidden; }
   .profile-hero::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 50%, rgba(0,242,254,0.06) 0%, transparent 60%); pointer-events:none; }
   .profile-avatar-lg { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; color:var(--gold); background:rgba(255,215,0,0.12); border:3px solid var(--gold); box-shadow:0 0 25px rgba(255,215,0,0.3); flex-shrink:0; }
   .profile-name { font-family:'Bebas Neue',cursive; font-size:44px; letter-spacing:2px; line-height:1; }
   .profile-sub { color:var(--neon-blue); font-family:'JetBrains Mono',monospace; font-size:14px; margin-top:4px; }
-
-  /* Progress ring */
   .progress-ring-wrap { display:flex; flex-direction:column; align-items:center; margin-left:auto; flex-shrink:0; }
   .progress-ring-label { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; text-transform:uppercase; margin-top:6px; letter-spacing:1px; }
 
-  /* Prediction accuracy section */
   .prediction-accuracy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:24px; }
   .acc-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
   .acc-card .acc-val { font-family:'Bebas Neue',cursive; font-size:38px; line-height:1; }
@@ -222,7 +219,6 @@
   .acc-card .acc-bar-wrap { height:4px; background:rgba(255,255,255,0.08); border-radius:2px; margin-top:8px; overflow:hidden; }
   .acc-card .acc-bar-fill { height:100%; border-radius:2px; transition:width 1s ease; }
 
-  /* Prediction vs Actual table */
   .pred-table { width:100%; border-collapse:collapse; font-size:13px; }
   .pred-table th { font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); padding:10px 12px; border-bottom:1px solid var(--border); text-align:left; }
   .pred-table td { padding:10px 12px; border-bottom:1px solid rgba(30,41,59,0.4); }
@@ -232,40 +228,73 @@
   .pred-result-exact { color:var(--gold); }
   .pred-result-correct { color:var(--accent); }
   .pred-result-wrong { color:var(--red); opacity:.7; }
-  .pred-result-pending { color:var(--text-muted); }
   .pred-pts-badge { display:inline-flex; align-items:center; justify-content:center; width:28px; height:22px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; }
   .pts-2 { background:rgba(255,215,0,0.15); color:var(--gold); }
   .pts-1 { background:rgba(56,239,125,0.12); color:var(--accent); }
   .pts-0 { background:rgba(255,71,87,0.1); color:var(--red); }
   .pts-pend { background:rgba(255,255,255,0.05); color:var(--text-muted); }
 
-  /* Ko picks table */
-  .ko-picks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
-  .ko-pick-item { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:6px; }
-  .ko-pick-stage { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--neon-blue); text-transform:uppercase; }
-  .ko-pick-teams { display:flex; justify-content:space-between; align-items:center; }
-  .ko-pick-team { font-size:12px; font-weight:700; }
-  .ko-pick-prediction { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; letter-spacing:1px; color:var(--text-secondary); }
-  .ko-pick-result-correct { color:var(--accent); }
-  .ko-pick-result-wrong { color:var(--red); }
-  .ko-pick-result-pending { color:var(--text-muted); }
+  .ko-picks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+  .ko-pick-item { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:14px; }
+  .ko-pick-stage { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--neon-blue); text-transform:uppercase; margin-bottom:6px; }
+  .ko-pick-teams { font-size:13px; font-weight:700; margin-bottom:6px; }
+  .ko-pick-prediction { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; letter-spacing:1px; }
 
-  /* Champion prediction */
   .champion-predict-card { background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.02)); border:1px solid rgba(255,215,0,0.3); border-radius:14px; padding:20px 24px; display:flex; align-items:center; gap:16px; margin-bottom:24px; }
-  .champion-trophy { font-size:40px; }
   .champion-pick-name { font-family:'Bebas Neue',cursive; font-size:32px; color:var(--gold); }
-  .champion-pick-sub { font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
-  .champion-correct { color:var(--accent); font-size:20px; margin-left:auto; }
 
-  /* Tabs inside detail */
   .detail-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:24px; flex-wrap:wrap; }
   .detail-tab { background:none; border:none; color:var(--text-muted); font-size:13px; font-weight:600; padding:10px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; margin-bottom:-1px; font-family:'Plus Jakarta Sans',sans-serif; }
   .detail-tab.active { color:var(--neon-blue); border-bottom-color:var(--neon-blue); }
   .detail-tab-content { display:none; }
   .detail-tab-content.active { display:block; animation:pageEnter .3s ease; }
 
-  /* ====== CONFETTI CANVAS ====== */
+  /* PHASE 2 PREDICTION UI */
+  .phase2-locked-banner { background:linear-gradient(135deg,rgba(56,239,125,0.1),rgba(56,239,125,0.03)); border:1px solid rgba(56,239,125,0.3); border-radius:14px; padding:24px; text-align:center; margin-bottom:24px; }
+  .phase2-locked-banner .lock-icon { font-size:40px; margin-bottom:10px; }
+  .phase2-locked-banner h3 { font-family:'Bebas Neue',cursive; font-size:28px; color:var(--accent); letter-spacing:1px; }
+  .phase2-locked-banner p { color:var(--text-secondary); font-size:14px; margin-top:6px; }
+
+  .ko-entry-card { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:12px; }
+  .ko-entry-teams { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .ko-entry-team { flex:1; }
+  .ko-entry-team-name { font-weight:700; font-size:15px; }
+  .ko-entry-team-sub { font-size:11px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+  .ko-vs { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-muted); flex-shrink:0; }
+  .pens-row { display:flex; align-items:center; gap:10px; margin-top:8px; font-size:13px; color:var(--text-muted); }
+  .pens-row select { background:#060b13; border:1px solid var(--border); border-radius:8px; color:#fff; padding:6px 10px; font-size:12px; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; outline:none; }
+  .pens-row select:focus { border-color:var(--border-focus); }
+
+  /* LOCK STATUS */
+  .lock-status-badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; font-family:'JetBrains Mono',monospace; }
+  .lock-locked { background:rgba(56,239,125,0.12); color:var(--accent); border:1px solid rgba(56,239,125,0.25); }
+  .lock-unlocked { background:rgba(0,242,254,0.1); color:var(--neon-blue); border:1px solid rgba(0,242,254,0.25); }
+  .lock-notstarted { background:rgba(255,255,255,0.05); color:var(--text-muted); border:1px solid var(--border); }
+
+  /* ADMIN USER MANAGER */
+  .user-row { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid rgba(30,41,59,0.5); gap:12px; flex-wrap:wrap; }
+  .user-row:last-child { border-bottom:none; }
+  .user-row-name { font-weight:700; font-size:15px; }
+  .user-row-meta { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .user-row-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+  /* CONFETTI */
   #confettiCanvas { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:500; display:none; }
+
+  /* POINTS TABLE */
+  .pts-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:16px; }
+  .pts-table th { font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); padding:8px 12px; border-bottom:1px solid var(--border); text-align:left; }
+  .pts-table td { padding:10px 12px; border-bottom:1px solid rgba(30,41,59,0.4); font-size:13px; }
+  .pts-table td:last-child { font-family:'JetBrains Mono',monospace; color:var(--gold); font-weight:700; }
+
+  @media (max-width:768px) {
+    .page { padding:0 16px 60px; }
+    nav { padding:0 16px; }
+    .hero { padding:40px 16px 28px; }
+    .match-grid { grid-template-columns:1fr; }
+    .profile-hero { flex-wrap:wrap; }
+    .progress-ring-wrap { margin-left:0; }
+  }
 </style>
 </head>
 <body>
@@ -281,16 +310,23 @@
 <nav>
   <div class="nav-logo">⚽ <span>WC2026</span> PREDICTIONS</div>
   <div style="display:flex;align-items:center;gap:16px">
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showPage('dashboard')">📊 Dashboard</button>
-      <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Leaderboard</button>
-      <button class="nav-tab" id="uploadNavBtn" style="display:none;" onclick="showPage('upload')">📁 Upload</button>
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showPage('leaderboard',this)">🏆 Leaderboard</button>
+      <button class="nav-tab" id="myPicksTab" style="display:none" onclick="showPage('mypicks',this)">🎯 My Picks</button>
+      <button class="nav-tab" id="uploadNavBtn" style="display:none" onclick="showPage('upload',this)">📁 Upload</button>
       <button class="nav-tab" id="adminNavBtn" onclick="handleAdminNav()">⚙️ Admin <span class="admin-badge">LIVE</span></button>
     </div>
-    <div id="navAdminUser" style="display:none;align-items:center;gap:10px;" class="sub-cell">
+    <div id="navUserInfo" style="display:none;align-items:center;gap:10px;">
+      <span id="navUserName" style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)"></span>
+      <button class="save-btn" style="padding:4px 8px;border-color:rgba(0,242,254,0.4);color:var(--neon-blue);" onclick="openChangePasswordModal()">🔑 Change Password</button>
+      <button class="save-btn" style="padding:4px 8px;" onclick="userLogout()">Logout</button>
+    </div>
+    <div id="navAdminUser" style="display:none;align-items:center;gap:10px;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)">🔑 Admin</span>
       <button class="save-btn" style="padding:4px 8px;" onclick="adminLogout()">Logout</button>
     </div>
+    <button class="save-btn" id="loginBtn" onclick="openLoginModal('user')" style="border-color:rgba(0,242,254,0.4);color:var(--neon-blue)">🔐 Login</button>
   </div>
 </nav>
 
@@ -303,8 +339,6 @@
 
 <!-- DASHBOARD PAGE -->
 <div class="page active" id="page-dashboard">
-
-  <!-- LIVE SCORES PANEL -->
   <div id="liveScoresPanel">
     <div class="live-scores-header">
       <div style="display:flex;align-items:center;gap:8px;">
@@ -317,7 +351,6 @@
       <div class="scores-loading"><div class="spinner"></div> Loading today's fixtures...</div>
     </div>
   </div>
-
   <div id="dashboardEmpty" class="empty-state" style="display:none">
     <div class="es-icon">📊</div>
     <p>No data loaded yet.</p>
@@ -352,19 +385,52 @@
       <div class="card-title">🏆 Championship Leaderboard</div>
       <div style="overflow-x:auto">
         <table class="lb-table">
-          <thead><tr><th>#</th><th>Participant</th><th>Phase 1</th><th>Phase 2</th><th>Bonuses</th><th>Total</th><th>Exact</th><th>Correct</th></tr></thead>
+          <thead><tr><th>#</th><th>Participant</th><th>Phase 1</th><th>Phase 2</th><th>Total</th><th>Exact</th><th>Correct</th><th>Phase 2 Status</th></tr></thead>
           <tbody id="lbBody"></tbody>
         </table>
       </div>
     </div>
+    <div class="card" style="margin-top:24px">
+      <div class="card-title">📋 Points Guide</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Phase 1 — Group Stage</div>
+          <table class="pts-table">
+            <tr><th>Outcome</th><th>Points</th></tr>
+            <tr><td>Correct result</td><td>1 pt</td></tr>
+            <tr><td>Exact scoreline</td><td>2 pts total</td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Phase 2 — Knockout</div>
+          <table class="pts-table">
+            <tr><th>Round</th><th>Correct / Exact</th></tr>
+            <tr><td>R32</td><td>1 / 2 pts</td></tr>
+            <tr><td>R16</td><td>1 / 3 pts + 1 adv*</td></tr>
+            <tr><td>QF</td><td>1 / 3 pts + 1 adv*</td></tr>
+            <tr><td>SF</td><td>2 / 4 pts + 2 adv</td></tr>
+            <tr><td>Final</td><td>2 / 5 pts + 4 adv</td></tr>
+            <tr><td>3rd Place</td><td>1 / 3 pts</td></tr>
+            <tr><td>Champion pick</td><td>+10 pts bonus</td></tr>
+            <tr><td>Perfect Bracket</td><td>+5 pts bonus</td></tr>
+          </table>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace">*Adv pts = fallback only (if fixture doesn't match reality)</p>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
+
+<!-- MY PICKS — Phase 2 User Entry -->
+<div class="page" id="page-mypicks">
+  <div id="mypicksContent"></div>
 </div>
 
 <!-- UPLOAD PAGE -->
 <div class="page" id="page-upload">
   <div class="card" style="margin-bottom:24px">
     <div class="card-title">📁 Upload Participant Sheets</div>
-    <div class="alert alert-info">ℹ️ Upload one or multiple <strong>.xlsx</strong> prediction sheets. Data syncs to Firebase automatically.</div>
+    <div class="alert alert-info">ℹ️ Upload one or multiple <strong>.xlsx</strong> Phase 1 prediction sheets. Data syncs to Firebase automatically.</div>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
       <div class="upload-icon">📂</div>
       <p style="font-size:16px;font-weight:700;">Drag & drop participant .xlsx files here</p>
@@ -380,14 +446,57 @@
 
 <!-- ADMIN PAGE -->
 <div class="page" id="page-admin">
-  <div id="adminModeAlert" class="alert alert-warn">⚙️ Admin Terminal — Enter finalized match scores. Points recalculate for all participants in real time.</div>
+  <div class="alert alert-warn">⚙️ Admin Terminal — Manage participants, Phase 2 access, and match results.</div>
   <div class="inner-tabs">
     <button class="inner-tab active" onclick="showAdminTab('group')">Group Stage</button>
-    <button class="inner-tab" onclick="showAdminTab('knockout')">Knockout Bracket</button>
+    <button class="inner-tab" onclick="showAdminTab('knockout')">Knockout Results</button>
+    <button class="inner-tab" onclick="showAdminTab('users')">👥 User Logins</button>
+    <button class="inner-tab" onclick="showAdminTab('phase2')">🔒 Phase 2 Control</button>
     <button class="inner-tab" onclick="showAdminTab('security')">🛡️ Security</button>
   </div>
   <div id="adminTab-group"><div id="adminGroupMatches"></div></div>
   <div id="adminTab-knockout" style="display:none"><div id="adminKOMatches"></div></div>
+  <div id="adminTab-users" style="display:none">
+    <div class="card">
+      <div class="card-title">👥 Participant Login Credentials</div>
+      <div class="alert alert-info">ℹ️ Create login accounts for each participant so they can submit Phase 2 knockout predictions directly in the app.</div>
+      <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="openCreateUserModal()">➕ Create User Login</button>
+        <button class="btn btn-success" onclick="bulkCreateAllUsers()">⚡ Bulk Create All (admin@123)</button>
+        <button class="save-btn" onclick="refreshUserList()">↻ Refresh</button>
+      </div>
+      <div id="userListContainer"><div class="scores-loading"><div class="spinner"></div> Loading users...</div></div>
+    </div>
+  </div>
+  <div id="adminTab-phase2" style="display:none">
+    <!-- Global open/close -->
+    <div class="card" style="margin-bottom:20px;border-color:rgba(255,215,0,0.3)">
+      <div class="card-title">🚦 Phase 2 Global Control</div>
+      <div class="alert alert-gold" style="margin-bottom:16px">Enable Phase 2 to let all participants enter knockout predictions. Set up R32 fixtures below first.</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button class="btn btn-success" id="openPhase2Btn" onclick="setPhase2Open(true)" style="font-size:16px;padding:14px 28px">🟢 Open Phase 2 for All Users</button>
+        <button class="btn btn-danger" id="closePhase2Btn" onclick="setPhase2Open(false)" style="font-size:16px;padding:14px 28px">🔴 Close Phase 2</button>
+        <span id="phase2StatusBadge" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700"></span>
+      </div>
+    </div>
+    <!-- R32 Fixture Setup -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">🏟️ R32 Bracket Setup — Enter the 16 Knockout Fixtures</div>
+      <div class="alert alert-info" style="margin-bottom:16px">ℹ️ Enter all 16 Round of 32 fixtures. The bracket auto-cascades (R16 onwards auto-fills from your saved R32 entries). Save after each pair, or save all at once.</div>
+      <div id="adminR32Fixtures">
+        <div class="scores-loading"><div class="spinner"></div> Loading...</div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveAllR32Fixtures()">💾 Save All Fixtures</button>
+        <button class="save-btn" onclick="renderAdminPhase2Setup()">↻ Refresh</button>
+      </div>
+    </div>
+    <!-- Per-user lock list -->
+    <div class="card">
+      <div class="card-title">👥 Per-User Submission Status</div>
+      <div id="phase2LockList"><div class="scores-loading"><div class="spinner"></div> Loading...</div></div>
+    </div>
+  </div>
   <div id="adminTab-security" style="display:none">
     <div class="card">
       <div class="card-title">⚙️ Operator Credentials</div>
@@ -405,10 +514,10 @@
 <div class="modal-overlay hidden" id="loginModal">
   <div class="modal-box">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-      <div class="modal-title">⚙️ Operator Access</div>
+      <div class="modal-title" id="loginModalTitle">🔐 Login</div>
       <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;" onclick="closeLoginModal()">✕</button>
     </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">Authenticate to manage match results.</p>
+    <p id="loginModalSub" style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">Enter your credentials to continue.</p>
     <div class="modal-error" id="loginError">Invalid credentials.</div>
     <div class="modal-field"><label>Username</label><input type="text" id="loginUser" autocomplete="username"></div>
     <div class="modal-field"><label>Password</label><input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
@@ -416,9 +525,45 @@
   </div>
 </div>
 
+<!-- CREATE USER MODAL -->
+<div class="modal-overlay hidden" id="createUserModal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+      <div class="modal-title">➕ Create User Login</div>
+      <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;" onclick="closeCreateUserModal()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">Link a login account to an existing participant profile.</p>
+    <div class="modal-error" id="createUserError"></div>
+    <div class="modal-field">
+      <label>Participant</label>
+      <select id="cuParticipant">
+        <option value="">— Select participant —</option>
+      </select>
+    </div>
+    <div class="modal-field"><label>Username (login name)</label><input type="text" id="cuUsername" placeholder="e.g. siddharthk"></div>
+    <div class="modal-field"><label>Password</label><input type="password" id="cuPassword" placeholder="Temporary password..."></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="createUserLogin()">Create Login</button>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="changePasswordModal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+      <div class="modal-title">🔑 Change Password</div>
+      <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;" onclick="closeChangePasswordModal()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">Choose a new password for your account.</p>
+    <div class="modal-error" id="cpError"></div>
+    <div class="alert alert-success" id="cpSuccess" style="display:none">✅ Password updated successfully!</div>
+    <div class="modal-field"><label>Current Password</label><input type="password" id="cpCurrentPass" placeholder="Your current password"></div>
+    <div class="modal-field"><label>New Password</label><input type="password" id="cpNewPass" placeholder="At least 6 characters"></div>
+    <div class="modal-field"><label>Confirm New Password</label><input type="password" id="cpConfirmPass" placeholder="Repeat new password" onkeydown="if(event.key==='Enter')doChangePassword()"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doChangePassword()">Update Password</button>
+  </div>
+</div>
+
 <script>
-// ============================================================
-// FIREBASE CONFIG
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyCwNXCtnx8uzpdk6Ze3bEUwEzMsocn9yH0",
@@ -438,9 +583,24 @@ let state = {
   koActualResults: {},
   actualChampion: null,
   isAdmin: false,
+  currentUser: null,        // { username, participantName }
+  phase2Enabled: false,     // global phase 2 toggle
+  userLocks: {},            // { participantName: { locked: bool, phase2Predictions: {...} } }
+  userAccounts: {},         // { username: { participantName, passwordHash } }
+  phase2Brackets: [],       // [ {id, stage, home, away} ] — admin-defined KO fixtures
 };
 let cloudCredentialsCache = { user: 'Admin', pass: 'Admin!@#123' };
 let previousLeader = null;
+
+// ============================================================
+// SIMPLE PASSWORD HASHING (base64 — sufficient for a local comp)
+// ============================================================
+function simpleHash(str) {
+  return btoa(encodeURIComponent(str + '::wc2026salt'));
+}
+function checkHash(str, hash) {
+  return simpleHash(str) === hash;
+}
 
 // ============================================================
 // FIREBASE SYNC
@@ -451,19 +611,17 @@ function connectAndSyncFirebase() {
     snap.forEach(doc => { state.participants[doc.id] = doc.data(); });
     uiRefresh();
   });
+
   db.collection("tournamentState").doc("results").onSnapshot(doc => {
     if (doc.exists) {
       const d = doc.data();
-      // Read-only: just sync state from Firestore. Writes only happen via
-      // saveResult / saveKOResult / saveChampion — never from this listener.
       state.actualResults   = d.actualResults   || {};
       state.koActualResults = d.koActualResults || {};
       state.actualChampion  = d.actualChampion  || null;
     }
-    // If doc doesn't exist: do nothing. _writeField's catch block will
-    // initialise it the first time an admin saves a result.
     uiRefresh();
   });
+
   db.collection("tournamentState").doc("security").onSnapshot(doc => {
     if (doc.exists) {
       cloudCredentialsCache = doc.data();
@@ -471,6 +629,30 @@ function connectAndSyncFirebase() {
     } else {
       db.collection("tournamentState").doc("security").set({ user:'Admin', pass:'Admin!@#123' });
     }
+  });
+
+  db.collection("tournamentState").doc("phase2").onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      state.phase2Enabled = d.enabled || false;
+      state.userLocks = d.userLocks || {};
+      const cb = document.getElementById('phase2GlobalEnabled');
+      if (cb) cb.checked = state.phase2Enabled;
+    }
+    uiRefresh();
+    refreshPhase2LockList();
+    if (state.currentUser) refreshMyPicks();
+  });
+
+  db.collection("tournamentState").doc("userAccounts").onSnapshot(doc => {
+    state.userAccounts = doc.exists ? (doc.data().accounts || {}) : {};
+    refreshUserList();
+  });
+
+  db.collection("tournamentState").doc("phase2brackets").onSnapshot(doc => {
+    state.phase2Brackets = doc.exists ? (doc.data().fixtures || []) : [];
+    if (state.currentUser) refreshMyPicks();
+    if (state.isAdmin) renderAdminPhase2Setup();
   });
 }
 
@@ -480,6 +662,7 @@ function uiRefresh() {
   buildAdminMatches();
   updateUploadedList();
   checkLeaderChange();
+  updateNavForUser();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -488,54 +671,32 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-// CONFETTI ENGINE
+// CONFETTI
 // ============================================================
 function launchConfetti(duration = 3000) {
   const canvas = document.getElementById('confettiCanvas');
   canvas.style.display = 'block';
   const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
   const pieces = [];
   const colors = ['#ffd700','#00f2fe','#38ef7d','#ff4757','#ffffff','#a855f7'];
-  const totalPieces = 200;
-
-  for (let i = 0; i < totalPieces; i++) {
-    pieces.push({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 200,
-      w: 6 + Math.random() * 8,
-      h: 4 + Math.random() * 6,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      angle: Math.random() * Math.PI * 2,
-      rotSpeed: (Math.random() - .5) * .15,
-      vx: (Math.random() - .5) * 3,
-      vy: 1.5 + Math.random() * 3,
-      alpha: 1
-    });
+  for (let i = 0; i < 200; i++) {
+    pieces.push({ x:Math.random()*canvas.width, y:-10-Math.random()*200, w:6+Math.random()*8, h:4+Math.random()*6,
+      color:colors[Math.floor(Math.random()*colors.length)], angle:Math.random()*Math.PI*2,
+      rotSpeed:(Math.random()-.5)*.15, vx:(Math.random()-.5)*3, vy:1.5+Math.random()*3, alpha:1 });
   }
-
   const end = Date.now() + duration;
   function frame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const now = Date.now();
-    const timeLeft = end - now;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const now = Date.now(), timeLeft = end - now;
     pieces.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.angle += p.rotSpeed;
-      if (timeLeft < 800) p.alpha = Math.max(0, timeLeft / 800);
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.translate(p.x + p.w/2, p.y + p.h/2);
-      ctx.rotate(p.angle);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-      ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.angle+=p.rotSpeed;
+      if(timeLeft<800) p.alpha=Math.max(0,timeLeft/800);
+      ctx.save(); ctx.globalAlpha=p.alpha; ctx.translate(p.x+p.w/2,p.y+p.h/2); ctx.rotate(p.angle);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
     });
-    if (now < end) requestAnimationFrame(frame);
-    else { canvas.style.display = 'none'; ctx.clearRect(0, 0, canvas.width, canvas.height); }
+    if(now<end) requestAnimationFrame(frame);
+    else { canvas.style.display='none'; ctx.clearRect(0,0,canvas.width,canvas.height); }
   }
   frame();
 }
@@ -544,47 +705,32 @@ function checkLeaderChange() {
   const scores = getAllScores();
   if (!scores.length) return;
   const currentLeader = scores[0].name;
-  if (previousLeader && previousLeader !== currentLeader) {
-    launchConfetti(4000);
-  }
-  if (!previousLeader && scores[0].total > 0) {
-    // first time someone has points — celebrate
-    setTimeout(() => launchConfetti(2500), 500);
-  }
+  if (previousLeader && previousLeader !== currentLeader) launchConfetti(4000);
+  if (!previousLeader && scores[0].total > 0) setTimeout(() => launchConfetti(2500), 500);
   previousLeader = currentLeader;
 }
 
 // ============================================================
-// WC2026 SCHEDULE — Real fixtures, fetched from open Sofascore API
-// Falls back to hardcoded schedule if network unavailable
+// LIVE SCORES
 // ============================================================
-
-// Hardcoded WC2026 Group Stage schedule (real fixtures, Jun 12 – Jul 2)
 const WC2026_SCHEDULE = [
-  // Jun 12
   { date:'Jun 12', home:'Mexico', away:'South Africa', hs:2, as:0, status:'FT', group:'A' },
   { date:'Jun 12', home:'South Korea', away:'Czechia', hs:2, as:1, status:'FT', group:'A' },
-  // Jun 13
   { date:'Jun 13', home:'USA', away:'Paraguay', hs:null, as:null, status:'NS', time:'09:00', group:'D' },
   { date:'Jun 13', home:'Canada', away:'Bosnia & Herz.', hs:null, as:null, status:'NS', time:'06:00', group:'B' },
-  // Jun 14
   { date:'Jun 14', home:'Qatar', away:'Switzerland', hs:null, as:null, status:'NS', time:'06:00', group:'B' },
   { date:'Jun 14', home:'Brazil', away:'Morocco', hs:null, as:null, status:'NS', time:'03:45', group:'C' },
   { date:'Jun 14', home:'Haiti', away:'Scotland', hs:null, as:null, status:'NS', time:'06:45', group:'C' },
   { date:'Jun 14', home:'Australia', away:'Türkiye', hs:null, as:null, status:'NS', time:'09:45', group:'D' },
   { date:'Jun 14', home:'Germany', away:'Curaçao', hs:null, as:null, status:'NS', time:'22:45', group:'E' },
-  // Jun 15
   { date:'Jun 15', home:'Netherlands', away:'Japan', hs:null, as:null, status:'NS', time:'01:45', group:'F' },
   { date:'Jun 15', home:'Ivory Coast', away:'Ecuador', hs:null, as:null, status:'NS', time:'04:45', group:'E' },
 ];
-
 const FLAGS = {
-  'Mexico':'🇲🇽','South Africa':'🇿🇦','South Korea':'🇰🇷','Czechia':'🇨🇿',
-  'USA':'🇺🇸','Paraguay':'🇵🇾','Canada':'🇨🇦','Bosnia & Herz.':'🇧🇦',
-  'Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦',
-  'Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Australia':'🇦🇺','Türkiye':'🇹🇷',
-  'Germany':'🇩🇪','Curaçao':'🇨🇼','Netherlands':'🇳🇱','Japan':'🇯🇵',
-  'Ivory Coast':'🇨🇮','Ecuador':'🇪🇨','France':'🇫🇷','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Mexico':'🇲🇽','South Africa':'🇿🇦','South Korea':'🇰🇷','Czechia':'🇨🇿','USA':'🇺🇸','Paraguay':'🇵🇾',
+  'Canada':'🇨🇦','Bosnia & Herz.':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦',
+  'Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Australia':'🇦🇺','Türkiye':'🇹🇷','Germany':'🇩🇪','Curaçao':'🇨🇼',
+  'Netherlands':'🇳🇱','Japan':'🇯🇵','Ivory Coast':'🇨🇮','Ecuador':'🇪🇨','France':'🇫🇷','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
   'Spain':'🇪🇸','Argentina':'🇦🇷','Portugal':'🇵🇹','Italy':'🇮🇹',
 };
 
@@ -592,148 +738,944 @@ function fetchLiveScores() {
   const el = document.getElementById('liveScoresContent');
   const btn = document.getElementById('refreshScoresBtn');
   btn.textContent = '↻ Loading...';
-
-  // Try to fetch from Sofascore's public WC2026 endpoint
   const today = new Date().toISOString().split('T')[0];
-  fetch(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${today}`, {
-    headers: { 'User-Agent': 'Mozilla/5.0' }
-  })
-  .then(r => r.ok ? r.json() : null)
-  .then(data => {
-    // Filter for WC2026 tournament (tournament id 16 on Sofascore)
-    const wc = (data?.events || []).filter(e => e.tournament?.uniqueTournament?.id === 16 || e.season?.name?.includes('2026 FIFA'));
-    if (wc.length) {
-      renderSofaMatches(el, wc);
-    } else {
-      renderSchedule(el);
-    }
-  })
-  .catch(() => renderSchedule(el))
-  .finally(() => { btn.textContent = '↻ Refresh'; });
+  fetch(`https://api.sofascore.com/api/v1/sport/football/scheduled-events/${today}`, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      const wc = (data?.events || []).filter(e => e.tournament?.uniqueTournament?.id === 16 || e.season?.name?.includes('2026 FIFA'));
+      if (wc.length) renderSofaMatches(el, wc);
+      else renderSchedule(el);
+    })
+    .catch(() => renderSchedule(el))
+    .finally(() => { btn.textContent = '↻ Refresh'; });
 }
 
 function renderSofaMatches(el, events) {
   let html = '<div class="scores-scroll">';
   events.slice(0, 10).forEach(e => {
-    const ht = e.homeTeam?.name || '?';
-    const at = e.awayTeam?.name || '?';
-    const hs = e.homeScore?.current;
-    const as_ = e.awayScore?.current;
-    const st = e.status?.type; // 'finished', 'inprogress', 'notstarted'
-    const isLive = st === 'inprogress';
-    const isFt = st === 'finished';
-    const dt = new Date(e.startTimestamp * 1000);
+    const ht = e.homeTeam?.name||'?', at = e.awayTeam?.name||'?';
+    const hs = e.homeScore?.current, as_ = e.awayScore?.current;
+    const st = e.status?.type, isLive = st==='inprogress', isFt = st==='finished';
+    const dt = new Date(e.startTimestamp*1000);
     const dateStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     const timeStr = dt.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    const statusHtml = isLive
-      ? `<span class="live-status-badge badge-live"><span class="live-dot" style="width:6px;height:6px;margin:0"></span> LIVE</span>`
+    const statusHtml = isLive ? `<span class="live-status-badge badge-live"><span class="live-dot" style="width:6px;height:6px;margin:0"></span> LIVE</span>`
       : isFt ? `<span class="live-status-badge badge-ft">✓ FT</span>`
       : `<span class="live-status-badge badge-ns">🕐 ${timeStr}</span>`;
     html += `<div class="live-match-card ${isLive?'is-live':''}">
       <div class="live-match-date">${dateStr}</div>
       <div class="live-match-teams">
-        <div class="live-team-row">
-          <span class="live-team-flag">${FLAGS[ht]||'🏳️'}</span>
-          <span class="live-team-name">${ht.length>14?ht.slice(0,14)+'…':ht}</span>
-          <span class="live-team-score">${isFt||isLive ? (hs??'—') : '—'}</span>
-        </div>
-        <div class="live-team-row">
-          <span class="live-team-flag">${FLAGS[at]||'🏳️'}</span>
-          <span class="live-team-name">${at.length>14?at.slice(0,14)+'…':at}</span>
-          <span class="live-team-score">${isFt||isLive ? (as_??'—') : '—'}</span>
-        </div>
-      </div>
-      ${statusHtml}
-    </div>`;
+        <div class="live-team-row"><span class="live-team-flag">${FLAGS[ht]||'🏳️'}</span><span class="live-team-name">${ht.length>14?ht.slice(0,14)+'…':ht}</span><span class="live-team-score">${isFt||isLive?(hs??'—'):'—'}</span></div>
+        <div class="live-team-row"><span class="live-team-flag">${FLAGS[at]||'🏳️'}</span><span class="live-team-name">${at.length>14?at.slice(0,14)+'…':at}</span><span class="live-team-score">${isFt||isLive?(as_??'—'):'—'}</span></div>
+      </div>${statusHtml}</div>`;
   });
   html += '</div>';
   el.innerHTML = html;
 }
 
 function renderSchedule(el) {
-  // Show real WC2026 schedule data
   let html = '<div class="scores-scroll">';
   WC2026_SCHEDULE.forEach(m => {
-    const isLive = m.status === 'LIVE';
-    const isFt = m.status === 'FT';
-    const statusHtml = isLive
-      ? `<span class="live-status-badge badge-live"><span class="live-dot" style="width:6px;height:6px;margin:0"></span> LIVE</span>`
+    const isLive = m.status==='LIVE', isFt = m.status==='FT';
+    const statusHtml = isLive ? `<span class="live-status-badge badge-live"><span class="live-dot" style="width:6px;height:6px;margin:0"></span> LIVE</span>`
       : isFt ? `<span class="live-status-badge badge-ft">✓ FT</span>`
       : `<span class="live-status-badge badge-ns">🕐 ${m.time||'TBD'}</span>`;
     html += `<div class="live-match-card ${isLive?'is-live':''}">
       <div class="live-match-date">${m.date} · Grp ${m.group}</div>
       <div class="live-match-teams">
-        <div class="live-team-row">
-          <span class="live-team-flag">${FLAGS[m.home]||'🏳️'}</span>
-          <span class="live-team-name">${m.home}</span>
-          <span class="live-team-score">${isFt ? m.hs : '—'}</span>
-        </div>
-        <div class="live-team-row">
-          <span class="live-team-flag">${FLAGS[m.away]||'🏳️'}</span>
-          <span class="live-team-name">${m.away}</span>
-          <span class="live-team-score">${isFt ? m.as : '—'}</span>
-        </div>
-      </div>
-      ${statusHtml}
-    </div>`;
+        <div class="live-team-row"><span class="live-team-flag">${FLAGS[m.home]||'🏳️'}</span><span class="live-team-name">${m.home}</span><span class="live-team-score">${isFt?m.hs:'—'}</span></div>
+        <div class="live-team-row"><span class="live-team-flag">${FLAGS[m.away]||'🏳️'}</span><span class="live-team-name">${m.away}</span><span class="live-team-score">${isFt?m.as:'—'}</span></div>
+      </div>${statusHtml}</div>`;
   });
   html += '</div>';
   el.innerHTML = html;
 }
 
 // ============================================================
+// SCORING ENGINE — matches the official rulebook exactly
+// ============================================================
+// PHASE 1: correct result = 1pt, exact = 2pts TOTAL (replaces result)
+// PHASE 2 match pts: R32: 1/2, R16: 1/3, QF: 1/3, SF: 2/4, Final: 2/5, 3rd: 1/3
+// PHASE 2 advancement: R16 1pt fallback, QF 1pt fallback, SF 2pt always, Final 4pt always
+// Champion bonus: +10, Perfect bracket: +5
+
+const ROUND_PTS = {
+  R32:  { correct:1, exact:2 },
+  R16:  { correct:1, exact:3, adv:1, advAlways:false },
+  QF:   { correct:1, exact:3, adv:1, advAlways:false },
+  SF:   { correct:2, exact:4, adv:2, advAlways:true },
+  Final:{ correct:2, exact:5, adv:4, advAlways:true },
+  '3rd':{ correct:1, exact:3 },
+};
+
+function scoreParticipant(p) {
+  let gmp=0, esp=0, p1total=0;
+  let koPts=0;
+  let exactCount=0, resultCount=0;
+  let p2ExactCount=0, p2ResultCount=0;
+
+  // Phase 1: group matches (from uploaded xlsx)
+  if (p.groupMatches) {
+    p.groupMatches.forEach(m => {
+      const a = state.actualResults[m.id];
+      if (!a || a.home===null || a.home===undefined || a.home==='') return;
+      const ah=parseInt(a.home), aa=parseInt(a.away), mh=parseInt(m.myHome), ma=parseInt(m.myAway);
+      if (isNaN(ah)||isNaN(aa)||isNaN(mh)||isNaN(ma)) return;
+      if (mh===ah && ma===aa) { esp+=2; exactCount++; resultCount++; }
+      else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) { gmp+=1; resultCount++; }
+    });
+  }
+  p1total = gmp + esp;
+
+  // Phase 2: knockout picks (can come from xlsx OR from in-app Phase 2 entry)
+  // In-app picks override xlsx picks for each match
+  const lockData = state.userLocks[p.name] || {};
+  const p2Preds = lockData.phase2Predictions || {};
+
+  // Build merged ko matches: prefer in-app over xlsx
+  const koMatchMap = {};
+
+  // First, seed from xlsx
+  if (p.koMatches) {
+    p.koMatches.forEach(m => { koMatchMap[m.id] = { ...m, source:'xlsx' }; });
+  }
+  // Override/add from in-app Phase 2 predictions
+  Object.keys(p2Preds).forEach(mid => {
+    const pred = p2Preds[mid];
+    if (koMatchMap[mid]) {
+      koMatchMap[mid] = { ...koMatchMap[mid], myHome: pred.myHome, myAway: pred.myAway, penWinner: pred.penWinner||null, source:'inapp' };
+    } else {
+      koMatchMap[mid] = { id: mid, stage: pred.stage||mid.replace(/[0-9]/g,'').split('_')[0], home: pred.homeTeam||'?', away: pred.awayTeam||'?', myHome: pred.myHome, myAway: pred.myAway, penWinner: pred.penWinner||null, source:'inapp' };
+    }
+  });
+
+  // Determine actual knockout teams from results
+  const qualifiedTeams = new Set();
+  Object.keys(state.koActualResults).forEach(mid => {
+    const a = state.koActualResults[mid];
+    if (a && a.homeTeam) qualifiedTeams.add(a.homeTeam);
+    if (a && a.awayTeam) qualifiedTeams.add(a.awayTeam);
+  });
+
+  let perfectBracket = true;
+  let perfectMatchesNeeded = 0;
+  let perfectMatchesCorrect = 0;
+
+  Object.values(koMatchMap).forEach(m => {
+    const a = state.koActualResults[m.id];
+    if (!a || a.home===null || a.home===undefined || a.home==='') {
+      perfectBracket = false; return;
+    }
+    const ah=parseInt(a.home), aa=parseInt(a.away), mh=parseInt(m.myHome), ma=parseInt(m.myAway);
+    if (isNaN(mh)||isNaN(ma)) { perfectBracket=false; return; }
+
+    perfectMatchesNeeded++;
+    const stageKey = m.stage ? m.stage.toUpperCase() : '';
+    const rp = ROUND_PTS[m.stage] || ROUND_PTS['R32'];
+    const isExact = (mh===ah && ma===aa);
+    const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
+
+    if (isExact) {
+      koPts += rp.exact;
+      p2ExactCount++; p2ResultCount++;
+      exactCount++; resultCount++;
+      perfectMatchesCorrect++;
+    } else if (isCorrectResult) {
+      koPts += rp.correct;
+      p2ResultCount++; resultCount++;
+      perfectBracket = false;
+    } else {
+      perfectBracket = false;
+    }
+
+    // Advancement points
+    if (rp.adv && rp.adv > 0) {
+      const fixtureMatches = (a.homeTeam===m.home && a.awayTeam===m.away);
+      if (rp.advAlways) {
+        // SF & Final: always award adv pts for each correct team in the match
+        if (a.homeTeam===m.home) koPts += rp.adv;
+        if (a.awayTeam===m.away) koPts += rp.adv;
+        // If predicted opponents but they both made it differently
+        if (a.homeTeam===m.away) koPts += rp.adv;
+        if (a.awayTeam===m.home) koPts += rp.adv;
+      } else if (!fixtureMatches) {
+        // Fallback: only if fixture doesn't match
+        if (qualifiedTeams.has(m.home)) koPts += rp.adv;
+        if (qualifiedTeams.has(m.away)) koPts += rp.adv;
+      }
+    }
+  });
+
+  // Champion bonus (+10)
+  const predictedChampion = p2Preds['champion']?.team || p.predictedChampion || null;
+  if (state.actualChampion && predictedChampion && String(predictedChampion).trim() === state.actualChampion) {
+    koPts += 10;
+  }
+
+  // Perfect bracket bonus (+5)
+  if (perfectBracket && perfectMatchesNeeded >= 32 && perfectMatchesCorrect === perfectMatchesNeeded) {
+    koPts += 5;
+  }
+
+  return { groupMatchPts: gmp, exactScoresPts: esp, koPts, phase1Total: p1total, total: p1total + koPts, exactCount, resultCount, p2ExactCount, p2ResultCount, predictedChampion };
+}
+
+function getAllScores() {
+  return Object.entries(state.participants).map(([n,p]) => ({ name:n, ...scoreParticipant(p) }))
+    .sort((a,b) => b.total-a.total || b.exactCount-a.exactCount);
+}
+
+// ============================================================
 // AUTH
 // ============================================================
-function handleAdminNav() {
-  if (state.isAdmin) { _showPageDirect('admin'); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('adminNavBtn').classList.add('active'); }
-  else { document.getElementById('loginModal').classList.remove('hidden'); document.getElementById('loginUser').focus(); }
+let _loginMode = 'user'; // 'user' | 'admin'
+
+function openLoginModal(mode) {
+  _loginMode = mode;
+  document.getElementById('loginModal').classList.remove('hidden');
+  document.getElementById('loginError').style.display='none';
+  if (mode === 'admin') {
+    document.getElementById('loginModalTitle').textContent = '⚙️ Operator Access';
+    document.getElementById('loginModalSub').textContent = 'Authenticate to manage match results.';
+  } else {
+    document.getElementById('loginModalTitle').textContent = '🔐 Participant Login';
+    document.getElementById('loginModalSub').textContent = 'Login to access Phase 2 knockout predictions.';
+  }
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  setTimeout(() => document.getElementById('loginUser').focus(), 100);
 }
+
 function closeLoginModal() {
   document.getElementById('loginModal').classList.add('hidden');
   document.getElementById('loginError').style.display='none';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
 }
+
 function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
-  if (u === cloudCredentialsCache.user && p === cloudCredentialsCache.pass) {
-    state.isAdmin = true;
-    state._adminBuilt = false; // force full rebuild with editable inputs
-    closeLoginModal();
-    document.getElementById('navAdminUser').style.display='flex';
-    document.getElementById('uploadNavBtn').style.display='flex';
-    _showPageDirect('admin');
-    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('adminNavBtn').classList.add('active');
-    uiRefresh();
+
+  if (_loginMode === 'admin') {
+    if (u === cloudCredentialsCache.user && p === cloudCredentialsCache.pass) {
+      state.isAdmin = true;
+      state._adminBuilt = false;
+      closeLoginModal();
+      document.getElementById('navAdminUser').style.display='flex';
+      document.getElementById('uploadNavBtn').style.display='flex';
+      document.getElementById('loginBtn').style.display='none';
+      _showPageDirect('admin');
+      document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+      document.getElementById('adminNavBtn').classList.add('active');
+      uiRefresh();
+    } else {
+      document.getElementById('loginError').textContent='Invalid admin credentials.';
+      document.getElementById('loginError').style.display='block';
+      document.getElementById('loginPass').value='';
+    }
   } else {
-    document.getElementById('loginError').style.display='block';
-    document.getElementById('loginPass').value='';
+    // Participant login
+    const acct = state.userAccounts[u];
+    if (acct && checkHash(p, acct.passwordHash)) {
+      state.currentUser = { username: u, participantName: acct.participantName };
+      closeLoginModal();
+      document.getElementById('navUserInfo').style.display='flex';
+      document.getElementById('navUserName').textContent = '👤 ' + acct.participantName;
+      document.getElementById('loginBtn').style.display='none';
+      updateNavForUser();
+      // Always go to My Picks after login (tab is always shown to logged-in users)
+      setTimeout(() => showPage('mypicks', document.getElementById('myPicksTab')), 100);
+      uiRefresh();
+    } else {
+      document.getElementById('loginError').textContent='Invalid credentials. Contact admin.';
+      document.getElementById('loginError').style.display='block';
+      document.getElementById('loginPass').value='';
+    }
   }
 }
+
+function userLogout() {
+  state.currentUser = null;
+  document.getElementById('navUserInfo').style.display='none';
+  document.getElementById('myPicksTab').style.display='none';
+  document.getElementById('loginBtn').style.display='';
+  showPage('dashboard', document.querySelector('.nav-tab'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+}
+
+function updateNavForUser() {
+  const mt = document.getElementById('myPicksTab');
+  if (state.currentUser) {
+    const pName = state.currentUser.participantName;
+    const lockData = state.userLocks[pName] || {};
+    const isLocked = lockData.locked === true;
+    // Hide tab only after predictions are locked & submitted
+    mt.style.display = isLocked ? 'none' : 'flex';
+  } else {
+    mt.style.display = 'none';
+  }
+}
+
 function adminLogout() {
   state.isAdmin = false;
-  state._adminBuilt = false; // force full rebuild in read-only mode
+  state._adminBuilt = false;
   document.getElementById('navAdminUser').style.display='none';
   document.getElementById('uploadNavBtn').style.display='none';
+  document.getElementById('loginBtn').style.display='';
   _showPageDirect('dashboard');
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.querySelector('.nav-tab').classList.add('active');
   uiRefresh();
 }
+
+function handleAdminNav() {
+  if (state.isAdmin) { _showPageDirect('admin'); document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active')); document.getElementById('adminNavBtn').classList.add('active'); }
+  else { openLoginModal('admin'); }
+}
+
 function updateAdminCredentials() {
   const nu = document.getElementById('cfgAdminUser').value.trim();
   const np = document.getElementById('cfgAdminPass').value;
   if (!nu) { alert('Username cannot be empty.'); return; }
-  const pkg = { user: nu, pass: np || cloudCredentialsCache.pass };
+  const pkg = { user:nu, pass: np||cloudCredentialsCache.pass };
   db.collection("tournamentState").doc("security").set(pkg).then(() => {
     const a = document.getElementById('securityAlert'); a.style.display='block';
     document.getElementById('cfgAdminPass').value='';
     setTimeout(()=>a.style.display='none', 4000);
   });
 }
+
 document.getElementById('loginModal').addEventListener('click', function(e){ if(e.target===this) closeLoginModal(); });
+
+// ============================================================
+// USER ACCOUNT MANAGEMENT
+// ============================================================
+function openCreateUserModal() {
+  const sel = document.getElementById('cuParticipant');
+  sel.innerHTML = '<option value="">— Select participant —</option>';
+  Object.keys(state.participants).sort().forEach(name => {
+    // Check if they already have an account
+    const hasAccount = Object.values(state.userAccounts).some(a => a.participantName === name);
+    sel.innerHTML += `<option value="${name}" ${hasAccount?'style="color:#38ef7d"':''}>${name}${hasAccount?' ✓':''}</option>`;
+  });
+  document.getElementById('cuUsername').value='';
+  document.getElementById('cuPassword').value='';
+  document.getElementById('createUserError').style.display='none';
+  document.getElementById('createUserModal').classList.remove('hidden');
+}
+
+function closeCreateUserModal() {
+  document.getElementById('createUserModal').classList.add('hidden');
+}
+
+function createUserLogin() {
+  const pName = document.getElementById('cuParticipant').value.trim();
+  const uname = document.getElementById('cuUsername').value.trim().toLowerCase();
+  const pass = document.getElementById('cuPassword').value;
+  const errEl = document.getElementById('createUserError');
+
+  if (!pName || !uname || !pass) { errEl.textContent='All fields required.'; errEl.style.display='block'; return; }
+  if (state.userAccounts[uname]) { errEl.textContent='Username already taken.'; errEl.style.display='block'; return; }
+
+  const updated = { ...state.userAccounts, [uname]: { participantName: pName, passwordHash: simpleHash(pass) } };
+  db.collection("tournamentState").doc("userAccounts").set({ accounts: updated }).then(() => {
+    closeCreateUserModal();
+    refreshUserList();
+  }).catch(err => { errEl.textContent='Save failed: '+err.message; errEl.style.display='block'; });
+}
+
+document.getElementById('createUserModal').addEventListener('click', function(e){ if(e.target===this) closeCreateUserModal(); });
+
+// ============================================================
+// CHANGE PASSWORD (for logged-in user)
+// ============================================================
+function openChangePasswordModal() {
+  document.getElementById('cpCurrentPass').value='';
+  document.getElementById('cpNewPass').value='';
+  document.getElementById('cpConfirmPass').value='';
+  document.getElementById('cpError').style.display='none';
+  document.getElementById('cpSuccess').style.display='none';
+  document.getElementById('changePasswordModal').classList.remove('hidden');
+}
+function closeChangePasswordModal() {
+  document.getElementById('changePasswordModal').classList.add('hidden');
+}
+function doChangePassword() {
+  const current = document.getElementById('cpCurrentPass').value;
+  const newPass  = document.getElementById('cpNewPass').value;
+  const confirm  = document.getElementById('cpConfirmPass').value;
+  const errEl    = document.getElementById('cpError');
+  const okEl     = document.getElementById('cpSuccess');
+  errEl.style.display='none'; okEl.style.display='none';
+
+  if (!current || !newPass || !confirm) { errEl.textContent='All fields are required.'; errEl.style.display='block'; return; }
+  if (newPass.length < 6) { errEl.textContent='New password must be at least 6 characters.'; errEl.style.display='block'; return; }
+  if (newPass !== confirm) { errEl.textContent='New passwords do not match.'; errEl.style.display='block'; return; }
+
+  const uname = state.currentUser?.username;
+  const acct  = state.userAccounts[uname];
+  if (!acct || !checkHash(current, acct.passwordHash)) {
+    errEl.textContent='Current password is incorrect.';
+    errEl.style.display='block'; return;
+  }
+  const updated = { ...state.userAccounts, [uname]: { ...acct, passwordHash: simpleHash(newPass) } };
+  db.collection("tournamentState").doc("userAccounts").set({ accounts: updated }).then(() => {
+    okEl.style.display='block';
+    document.getElementById('cpCurrentPass').value='';
+    document.getElementById('cpNewPass').value='';
+    document.getElementById('cpConfirmPass').value='';
+    setTimeout(() => closeChangePasswordModal(), 1800);
+  }).catch(err => { errEl.textContent='Save failed: '+err.message; errEl.style.display='block'; });
+}
+document.getElementById('changePasswordModal').addEventListener('click', function(e){ if(e.target===this) closeChangePasswordModal(); });
+
+// ============================================================
+// BULK CREATE ALL USER ACCOUNTS
+// ============================================================
+function bulkCreateAllUsers() {
+  const names = Object.keys(state.participants);
+  if (!names.length) { alert('No participants loaded yet. Upload sheets first.'); return; }
+
+  const toCreate = [];
+  names.forEach(fullName => {
+    // Username = first word of the participant name, lowercased
+    const uname = fullName.trim().split(/\s+/)[0].toLowerCase();
+    if (!state.userAccounts[uname]) {
+      toCreate.push({ uname, fullName });
+    }
+  });
+
+  if (!toCreate.length) { alert('All participants already have accounts!'); refreshUserList(); return; }
+
+  const list = toCreate.map(x => `• ${x.uname} → ${x.fullName}`).join('\n');
+  if (!confirm(`Create ${toCreate.length} account(s) with password "admin@123"?\n\n${list}`)) return;
+
+  const DEFAULT_PASS = 'admin@123';
+  const updated = { ...state.userAccounts };
+  toCreate.forEach(({ uname, fullName }) => {
+    updated[uname] = { participantName: fullName, passwordHash: simpleHash(DEFAULT_PASS) };
+  });
+
+  db.collection("tournamentState").doc("userAccounts").set({ accounts: updated }).then(() => {
+    alert(`✅ Created ${toCreate.length} account(s)! Default password: admin@123`);
+    refreshUserList();
+  }).catch(err => alert('Error: ' + err.message));
+}
+
+function refreshUserList() {
+  const el = document.getElementById('userListContainer');
+  if (!el) return;
+  const accounts = state.userAccounts;
+  if (!Object.keys(accounts).length) { el.innerHTML='<p style="color:var(--text-muted);font-size:14px;padding:16px 0">No user accounts yet. Create one above.</p>'; return; }
+  el.innerHTML = Object.entries(accounts).map(([uname, acct]) => `
+    <div class="user-row">
+      <div>
+        <div class="user-row-name">👤 ${uname}</div>
+        <div class="user-row-meta">→ ${acct.participantName}</div>
+      </div>
+      <div class="user-row-actions">
+        <button class="save-btn" onclick="resetUserPassword('${uname}')">🔑 Reset Password</button>
+        <button class="save-btn" style="border-color:var(--red);color:var(--red)" onclick="deleteUser('${uname}')">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function resetUserPassword(uname) {
+  const np = prompt(`New password for "${uname}":`)?.trim();
+  if (!np) return;
+  const updated = { ...state.userAccounts, [uname]: { ...state.userAccounts[uname], passwordHash: simpleHash(np) } };
+  db.collection("tournamentState").doc("userAccounts").set({ accounts: updated });
+}
+
+function deleteUser(uname) {
+  if (!confirm(`Remove login for "${uname}"?`)) return;
+  const updated = { ...state.userAccounts };
+  delete updated[uname];
+  db.collection("tournamentState").doc("userAccounts").set({ accounts: updated });
+}
+
+// ============================================================
+// PHASE 2 LOCK MANAGEMENT
+// ============================================================
+function setPhase2Open(open) {
+  if (!state.isAdmin) return;
+  const action = open ? 'open Phase 2 for ALL participants' : 'CLOSE Phase 2';
+  if (!confirm(`Are you sure you want to ${action}?`)) return;
+  _writePhase2Field('enabled', open);
+  state.phase2Enabled = open;
+  updateNavForUser();
+  renderAdminPhase2Setup();
+}
+
+const R32_SLOT_IDS = [
+  'R32-1','R32-2','R32-3','R32-4','R32-5','R32-6','R32-7','R32-8',
+  'R32-9','R32-10','R32-11','R32-12','R32-13','R32-14','R32-15','R32-16'
+];
+
+function renderAdminPhase2Setup() {
+  // Update status badge
+  const badge = document.getElementById('phase2StatusBadge');
+  const openBtn = document.getElementById('openPhase2Btn');
+  const closeBtn = document.getElementById('closePhase2Btn');
+  if (badge) {
+    badge.textContent = state.phase2Enabled ? '🟢 PHASE 2 IS OPEN' : '🔴 PHASE 2 IS CLOSED';
+    badge.style.color = state.phase2Enabled ? 'var(--accent)' : 'var(--red)';
+  }
+  if (openBtn) openBtn.style.opacity = state.phase2Enabled ? '0.5' : '1';
+  if (closeBtn) closeBtn.style.opacity = state.phase2Enabled ? '1' : '0.5';
+
+  // Build R32 fixture editor
+  const el = document.getElementById('adminR32Fixtures');
+  if (!el) return;
+
+  // Map existing fixtures by id
+  const existingMap = {};
+  (state.phase2Brackets || []).forEach(f => { existingMap[f.id] = f; });
+
+  const matchLabels = [
+    '1A vs 2B','2A vs 1B','1C vs 2D','2C vs 1D',
+    '1E vs 2F','2E vs 1F','1G vs 2H','2G vs 1H',
+    '1I vs 2J','2I vs 1J','1K vs 2L','2K vs 1L',
+    'Best 3rd #1','Best 3rd #2','Best 3rd #3','Best 3rd #4'
+  ];
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">';
+  R32_SLOT_IDS.forEach((id, i) => {
+    const ex = existingMap[id] || {};
+    html += `<div class="match-card" style="background:rgba(255,255,255,0.03)">
+      <div class="match-id" style="font-size:12px;color:var(--gold);margin-bottom:8px">${id} <span style="color:var(--text-muted);font-size:10px">· ${matchLabels[i]}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input type="text" class="score-input" id="r32h_${i}" value="${ex.home||''}" placeholder="Home team" style="width:130px;font-size:12px;text-align:left;padding-left:8px">
+        <span class="score-dash">vs</span>
+        <input type="text" class="score-input" id="r32a_${i}" value="${ex.away||''}" placeholder="Away team" style="width:130px;font-size:12px;text-align:left;padding-left:8px">
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function saveAllR32Fixtures() {
+  if (!state.isAdmin) return;
+  const fixtures = [];
+  // R32 fixtures entered by admin
+  R32_SLOT_IDS.forEach((id, i) => {
+    const h = document.getElementById('r32h_'+i)?.value.trim() || '';
+    const a = document.getElementById('r32a_'+i)?.value.trim() || '';
+    fixtures.push({ id, stage:'R32', home:h, away:a });
+  });
+  // Auto-generate R16, QF, SF, Final, 3rd slots (teams TBD — fill from results)
+  const r16 = Array.from({length:8},(_,i)=>({ id:`R16-${i+1}`, stage:'R16', home:'TBD', away:'TBD' }));
+  const qf  = Array.from({length:4},(_,i)=>({ id:`QF-${i+1}`,  stage:'QF',  home:'TBD', away:'TBD' }));
+  const sf  = Array.from({length:2},(_,i)=>({ id:`SF-${i+1}`,  stage:'SF',  home:'TBD', away:'TBD' }));
+  const fin = [{ id:'Final-1', stage:'Final', home:'TBD', away:'TBD' }];
+  const third = [{ id:'3rd-1', stage:'3rd', home:'TBD', away:'TBD' }];
+  const allFixtures = [...fixtures, ...r16, ...qf, ...sf, ...fin, ...third];
+
+  db.collection("tournamentState").doc("phase2brackets").set({ fixtures: allFixtures })
+    .then(() => {
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = '✅ Saved!'; btn.style.background='rgba(56,239,125,0.2)';
+      setTimeout(() => { btn.textContent=orig; btn.style.background=''; }, 2000);
+    })
+    .catch(err => alert('Save failed: ' + err.message));
+}
+
+function refreshPhase2LockList() {
+  const el = document.getElementById('phase2LockList');
+  if (!el) return;
+  const names = Object.keys(state.participants);
+  if (!names.length) { el.innerHTML='<p style="color:var(--text-muted);font-size:14px">No participants loaded.</p>'; return; }
+
+  el.innerHTML = names.sort().map(name => {
+    const lockData = state.userLocks[name] || {};
+    const isLocked = lockData.locked === true;
+    const hasStarted = lockData.phase2Predictions && Object.keys(lockData.phase2Predictions).length > 0;
+    const predCount = hasStarted ? Object.keys(lockData.phase2Predictions).length : 0;
+    const statusBadge = isLocked
+      ? `<span class="lock-status-badge lock-locked">🔒 Locked & Submitted</span>`
+      : hasStarted
+      ? `<span class="lock-status-badge lock-unlocked">✏️ In Progress (${predCount} picks)</span>`
+      : `<span class="lock-status-badge lock-notstarted">— Not Started</span>`;
+
+    return `<div class="user-row">
+      <div>
+        <div class="user-row-name">${name}</div>
+        <div style="margin-top:6px">${statusBadge}</div>
+      </div>
+      <div class="user-row-actions">
+        ${isLocked
+          ? `<button class="btn btn-danger" style="padding:6px 14px;font-size:12px" onclick="adminUnlockUser('${name}')">🔓 Unlock</button>`
+          : `<button class="btn btn-success" style="padding:6px 14px;font-size:12px" onclick="adminLockUser('${name}')">🔒 Force Lock</button>`}
+        <button class="save-btn" onclick="viewUserPicks('${name}')">👁️ View Picks</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function adminLockUser(name) {
+  if (!confirm(`Lock Phase 2 predictions for "${name}"?`)) return;
+  const current = state.userLocks[name] || {};
+  _writePhase2Field(`userLocks.${name}`, { ...current, locked: true });
+}
+
+function adminUnlockUser(name) {
+  if (!confirm(`Unlock Phase 2 for "${name}"? They will be able to edit predictions again.`)) return;
+  const current = state.userLocks[name] || {};
+  _writePhase2Field(`userLocks.${name}`, { ...current, locked: false }).then(() => {
+    // If this is the currently logged-in user, restore their My Picks tab
+    if (state.currentUser?.participantName === name) updateNavForUser();
+  });
+}
+
+function viewUserPicks(name) {
+  showPage('dashboard', document.querySelector('.nav-tab'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('.nav-tab').classList.add('active');
+  setTimeout(() => showDetail(name), 300);
+}
+
+// ============================================================
+// MY PICKS — Phase 2 user prediction entry
+// ============================================================
+function refreshMyPicks() {
+  if (!state.currentUser) return;
+  const pName = state.currentUser.participantName;
+  const p = state.participants[pName];
+  const lockData = state.userLocks[pName] || {};
+  const isLocked = lockData.locked === true;
+  const p2Preds = lockData.phase2Predictions || {};
+  const el = document.getElementById('mypicksContent');
+
+  if (!p) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">⚠️</div><p>No prediction sheet found for your account.</p><p style="font-size:13px;color:var(--text-muted);margin-top:6px">Contact admin to upload your Phase 1 sheet first.</p></div>`;
+    return;
+  }
+
+  // ── PHASE 1 VIEW (when Phase 2 not yet open) ──────────────────────────────
+  if (!state.phase2Enabled) {
+    let html = `
+      <div class="alert alert-info">📋 <strong>Phase 1 — Group Stage:</strong> Your group stage predictions are shown below (read-only). Admin will open Phase 2 once all group matches are complete.</div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">⚽ Your Group Stage Predictions</div>`;
+
+    if (!p.groupMatches || !p.groupMatches.length) {
+      html += `<p style="color:var(--text-muted);font-size:14px">No group stage predictions found on your sheet.</p>`;
+    } else {
+      // Group by letter
+      const groups = {};
+      p.groupMatches.forEach(m => {
+        const letter = m.id[0];
+        if (!groups[letter]) groups[letter] = [];
+        groups[letter].push(m);
+      });
+
+      html += `<div style="overflow-x:auto"><table class="pred-table">
+        <thead><tr>
+          <th>Match</th><th>Home</th><th>Away</th>
+          <th>My Prediction</th><th>Actual</th><th>Pts</th>
+        </tr></thead><tbody>`;
+
+      Object.entries(groups).sort().forEach(([letter, matches]) => {
+        html += `<tr><td colspan="6" style="font-family:'Bebas Neue',cursive;font-size:16px;color:var(--neon-blue);letter-spacing:2px;padding:14px 12px 6px;background:rgba(0,242,254,0.03);border-bottom:1px solid var(--border)">GROUP ${letter}</td></tr>`;
+        matches.forEach(m => {
+          const actual = state.actualResults[m.id];
+          const hasActual = actual && actual.home !== '' && actual.home !== null && actual.home !== undefined;
+          const mh = parseInt(m.myHome), ma = parseInt(m.myAway);
+          const hasPred = !isNaN(mh) && !isNaN(ma);
+          let pts = null, rowCls = '';
+          if (hasActual && hasPred) {
+            const ah = parseInt(actual.home), aa = parseInt(actual.away);
+            if (mh===ah && ma===aa) { pts=2; rowCls='pred-result-exact'; }
+            else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) { pts=1; rowCls='pred-result-correct'; }
+            else { pts=0; rowCls='pred-result-wrong'; }
+          }
+          const predStr = hasPred ? `${mh} – ${ma}` : `<span style="color:var(--text-muted)">—</span>`;
+          const actualStr = hasActual ? `${actual.home} – ${actual.away}` : `<span style="color:var(--text-muted)">TBD</span>`;
+          const ptsBadge = pts===null ? `<span class="pred-pts-badge pts-pend">—</span>`
+            : pts===2 ? `<span class="pred-pts-badge pts-2">2</span>`
+            : pts===1 ? `<span class="pred-pts-badge pts-1">1</span>`
+            : `<span class="pred-pts-badge pts-0">0</span>`;
+          html += `<tr class="${rowCls}">
+            <td class="pt-match">${m.id}</td>
+            <td style="font-size:13px;font-weight:600">${m.home||'?'}</td>
+            <td style="font-size:13px;font-weight:600">${m.away||'?'}</td>
+            <td class="pt-score">${predStr}</td>
+            <td class="pt-score">${actualStr}</td>
+            <td>${ptsBadge}</td>
+          </tr>`;
+        });
+      });
+      html += `</tbody></table></div>`;
+    }
+    html += `</div>
+      <div class="card">
+        <div class="card-title">⏳ Phase 2 — Knockout Stage</div>
+        <div class="alert alert-gold" style="margin-bottom:0">🏟️ Phase 2 (knockout predictions) will unlock once all group matches are complete. Admin will open it — check back soon!</div>
+      </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  // ── PHASE 2 VIEW (when Phase 2 is open) ───────────────────────────────────
+
+  // Build the ko match list from the sample participant's match structure (admin-defined fixtures)
+  const sampleParticipant = Object.values(state.participants)[0];
+  const fixtureTemplate = sampleParticipant?.koMatches || [];
+
+  if (!fixtureTemplate.length) {
+    el.innerHTML = `<div class="empty-state"><div class="es-icon">🏟️</div><p>No knockout fixtures defined yet.</p><p style="font-size:13px;color:var(--text-muted);margin-top:6px">Admin needs to confirm R32 bracket first.</p></div>`;
+    return;
+  }
+
+  // Get actual KO results to show completed teams
+  const actualKO = state.koActualResults;
+
+  let html = '';
+
+  // Phase 1 summary bar
+  const s1 = scoreParticipant(p);
+  const played1 = p.groupMatches ? p.groupMatches.filter(m => { const a=state.actualResults[m.id]; return a&&a.home!==''&&a.home!==null&&a.home!==undefined; }).length : 0;
+  html += `<div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(13,21,39,0.95),rgba(0,100,80,0.15));border-color:rgba(56,239,125,0.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">✅ Phase 1 Complete — Group Stage</div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:28px;color:var(--text-primary)">${s1.phase1Total} <span style="font-size:16px;color:var(--text-muted)">/ 144 pts</span></div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--gold)">${s1.exactCount}</div><div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Exact</div></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--accent)">${s1.resultCount}</div><div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Correct</div></div>
+        <div style="text-align:center"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--neon-blue)">${played1}</div><div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Played</div></div>
+      </div>
+    </div>
+  </div>`;
+
+  if (isLocked) {
+    html += `<div class="phase2-locked-banner">
+      <div class="lock-icon">🔒</div>
+      <h3>Predictions Submitted & Locked</h3>
+      <p>Your Phase 2 predictions have been locked in. Only the admin can reopen them if needed.</p>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  } else {
+    html += `<div class="alert alert-gold">✏️ <strong>Phase 2 Open:</strong> Enter your knockout stage predictions below. Once you submit, they'll be locked. You can save progress and come back before submitting.</div>`;
+  }
+
+  // Champion prediction
+  const champPred = p2Preds['champion']?.team || p.predictedChampion || '';
+  html += `<div class="card" style="margin-bottom:24px">
+    <div class="card-title">🏆 Champion Prediction <span style="font-size:13px;color:var(--gold);font-family:'JetBrains Mono',monospace">+10 pts</span></div>
+    ${isLocked
+      ? `<div style="font-family:'Bebas Neue',cursive;font-size:36px;color:var(--gold)">${champPred||'—'}</div>`
+      : `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <input type="text" class="score-input" id="p2champion" style="width:220px;text-align:left;padding-left:12px;font-size:14px" value="${champPred}" placeholder="Team name...">
+          <span style="font-size:12px;color:var(--text-muted)">Who wins the whole tournament?</span>
+        </div>`}
+  </div>`;
+
+  // Group by stage
+  const stages = ['R32','R16','QF','SF','Final','3rd'];
+  const byStage = {};
+  stages.forEach(s => byStage[s] = []);
+  fixtureTemplate.forEach(m => {
+    const s = m.stage || 'R32';
+    if (!byStage[s]) byStage[s] = [];
+    byStage[s].push(m);
+  });
+
+  const stageLabels = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
+  const stagePts = { R32:'Exact: 2pts | Correct: 1pt', R16:'Exact: 3pts | Correct: 1pt | Adv: +1pt', QF:'Exact: 3pts | Correct: 1pt | Adv: +1pt', SF:'Exact: 4pts | Correct: 2pts | Adv: +2pts', Final:'Exact: 5pts | Correct: 2pts | Adv: +4pts', '3rd':'Exact: 3pts | Correct: 1pt' };
+
+  stages.forEach(stage => {
+    const matches = byStage[stage];
+    if (!matches.length) return;
+
+    html += `<div class="match-section">
+      <div class="section-header" style="display:flex;justify-content:space-between;align-items:baseline">
+        ${stageLabels[stage]||stage}
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)">${stagePts[stage]||''}</span>
+      </div>
+      <div class="match-grid">`;
+
+    matches.forEach(m => {
+      const pred = p2Preds[m.id] || {};
+      const predH = pred.myHome ?? (m.myHome ?? '');
+      const predA = pred.myAway ?? (m.myAway ?? '');
+      const predPens = pred.penWinner || '';
+      const actualResult = actualKO[m.id];
+      const hasActual = actualResult && actualResult.home !== '' && actualResult.home !== null;
+
+      // Determine home/away team names — actual KO may have real teams
+      const homeTeam = actualResult?.homeTeam || m.home || 'TBD';
+      const awayTeam = actualResult?.awayTeam || m.away || 'TBD';
+
+      const isPredDraw = !isNaN(parseInt(predH)) && !isNaN(parseInt(predA)) && parseInt(predH) === parseInt(predA);
+
+      // Result badge if admin has entered result
+      let resultBadge = '';
+      let pts = null;
+      if (hasActual) {
+        const ah=parseInt(actualResult.home), aa=parseInt(actualResult.away), ph=parseInt(predH), pa=parseInt(predA);
+        const rp = ROUND_PTS[stage]||ROUND_PTS['R32'];
+        if (!isNaN(ph)&&!isNaN(pa)) {
+          if (ph===ah&&pa===aa) { pts=rp.exact; }
+          else if ((ah>aa&&ph>pa)||(ah<aa&&ph<pa)||(ah===aa&&ph===pa)) { pts=rp.correct; }
+          else { pts=0; }
+        }
+        resultBadge = `<div style="font-size:12px;margin-top:8px;font-family:'JetBrains Mono',monospace;">
+          <span style="color:var(--text-muted)">Result: </span>
+          <span style="color:var(--text-primary);font-weight:700">${actualResult.home} – ${actualResult.away}</span>
+          ${pts!==null?`<span style="margin-left:8px;padding:2px 8px;border-radius:6px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`:''}
+        </div>`;
+      }
+
+      const safe = m.id.replace(/[^a-z0-9]/gi,'_');
+
+      html += `<div class="ko-entry-card">
+        <div class="match-id">${m.id} · ${stage}</div>
+        <div class="ko-entry-teams">
+          <div class="ko-entry-team">
+            <div class="ko-entry-team-name">${homeTeam}</div>
+            <div class="ko-entry-team-sub">Home</div>
+          </div>
+          <div class="ko-vs">vs</div>
+          <div class="ko-entry-team" style="text-align:right">
+            <div class="ko-entry-team-name">${awayTeam}</div>
+            <div class="ko-entry-team-sub">Away</div>
+          </div>
+        </div>
+        <div class="score-inputs" style="justify-content:center">`;
+
+      if (isLocked) {
+        html += `<div class="score-readonly">${predH!==''?predH:'—'}</div><span class="score-dash">:</span><div class="score-readonly">${predA!==''?predA:'—'}</div>`;
+        if (predPens) html += `<span style="font-size:11px;color:var(--text-muted);margin-left:8px;font-family:'JetBrains Mono',monospace">Pens: ${predPens}</span>`;
+      } else {
+        html += `<input type="number" min="0" max="20" class="score-input" id="p2h_${safe}" value="${predH}" placeholder="0" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">
+          <span class="score-dash">:</span>
+          <input type="number" min="0" max="20" class="score-input" id="p2a_${safe}" value="${predA}" placeholder="0" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">`;
+      }
+
+      html += `</div>`;
+
+      // Penalty winner (only show if predicting a draw)
+      if (!isLocked) {
+        html += `<div class="pens-row" id="pensrow_${safe}" style="${isPredDraw?'':'display:none'}">
+          🎯 Penalty winner:
+          <select id="p2pens_${safe}" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">
+            <option value="" ${!predPens?'selected':''}>— Select —</option>
+            <option value="H" ${predPens==='H'?'selected':''}>Home (${homeTeam.slice(0,12)})</option>
+            <option value="A" ${predPens==='A'?'selected':''}>Away (${awayTeam.slice(0,12)})</option>
+          </select>
+        </div>
+        <script>
+          (function(){
+            const hEl = document.getElementById('p2h_${safe}');
+            const aEl = document.getElementById('p2a_${safe}');
+            const row = document.getElementById('pensrow_${safe}');
+            function check() { if(hEl&&aEl&&row) row.style.display = (hEl.value!==''&&aEl.value!==''&&hEl.value===aEl.value)?'':'none'; }
+            if(hEl) hEl.addEventListener('input', check);
+            if(aEl) aEl.addEventListener('input', check);
+          })();
+        <\/script>`;
+      }
+
+      html += resultBadge;
+      html += `</div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  // Submit / Save buttons
+  if (!isLocked) {
+    html += `<div style="display:flex;gap:12px;margin-top:32px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="submitPhase2()">🔒 Submit & Lock Predictions</button>
+      <button class="save-btn" onclick="savePhase2Draft()" style="padding:12px 24px">💾 Save Draft</button>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:var(--text-muted)">Submitting locks your picks permanently. Save Draft lets you continue later.</p>`;
+  }
+
+  el.innerHTML = html;
+}
+
+function autoSavePick(matchId, safe, homeTeam, awayTeam, stage) {
+  // Silent auto-save — no UI feedback, just persists to Firebase
+  const hEl = document.getElementById('p2h_'+safe);
+  const aEl = document.getElementById('p2a_'+safe);
+  const pensEl = document.getElementById('p2pens_'+safe);
+  if (!hEl || !aEl) return;
+  const hv = hEl.value.trim(), av = aEl.value.trim();
+  if (hv===''&&av==='') return;
+  const pred = { myHome: hv!==''?parseInt(hv):'', myAway: av!==''?parseInt(av):'', penWinner: pensEl?pensEl.value:'', homeTeam, awayTeam, stage };
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  const lockData = state.userLocks[pName] || {};
+  const updated = { ...lockData, phase2Predictions: { ...(lockData.phase2Predictions||{}), [matchId]: pred } };
+  _writePhase2Field(`userLocks.${pName}`, updated);
+}
+
+function savePhase2Draft() {
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  _collectAndSaveAllPicks(pName, false);
+  // Toast
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✅ Saved!';
+  setTimeout(() => btn.textContent=orig, 2000);
+}
+
+function submitPhase2() {
+  if (!confirm('Submit and lock all your Phase 2 predictions? This cannot be undone without contacting the admin.')) return;
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  _collectAndSaveAllPicks(pName, true);
+  launchConfetti(3000);
+  // After locking: redirect to dashboard and hide My Picks tab
+  setTimeout(() => {
+    updateNavForUser();
+    _showPageDirect('dashboard');
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('.nav-tab').classList.add('active');
+  }, 600);
+}
+
+function _collectAndSaveAllPicks(pName, lock) {
+  const sampleParticipant = Object.values(state.participants)[0];
+  const fixtureTemplate = sampleParticipant?.koMatches || [];
+  const lockData = state.userLocks[pName] || {};
+  const preds = { ...(lockData.phase2Predictions||{}) };
+
+  fixtureTemplate.forEach(m => {
+    const safe = m.id.replace(/[^a-z0-9]/gi,'_');
+    const hEl = document.getElementById('p2h_'+safe);
+    const aEl = document.getElementById('p2a_'+safe);
+    const pensEl = document.getElementById('p2pens_'+safe);
+    if (!hEl||!aEl) return;
+    const hv=hEl.value.trim(), av=aEl.value.trim();
+    if (hv===''&&av==='') return;
+    const actualKO = state.koActualResults[m.id]||{};
+    preds[m.id] = {
+      myHome: hv!==''?parseInt(hv):'',
+      myAway: av!==''?parseInt(av):'',
+      penWinner: pensEl?pensEl.value:'',
+      homeTeam: actualKO.homeTeam||m.home||'TBD',
+      awayTeam: actualKO.awayTeam||m.away||'TBD',
+      stage: m.stage
+    };
+  });
+
+  // Champion pick
+  const champEl = document.getElementById('p2champion');
+  if (champEl && champEl.value.trim()) {
+    preds['champion'] = { team: champEl.value.trim() };
+  }
+
+  const updated = { ...lockData, phase2Predictions: preds, locked: lock };
+  _writePhase2Field(`userLocks.${pName}`, updated);
+}
 
 // ============================================================
 // ROUTING
@@ -741,20 +1683,41 @@ document.getElementById('loginModal').addEventListener('click', function(e){ if(
 function _showPageDirect(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
+  if (id==='mypicks') refreshMyPicks();
+  if (id==='admin' && state.isAdmin) {
+    refreshUserList();
+    refreshPhase2LockList();
+  }
 }
-function showPage(id) {
+
+function showPage(id, tabEl) {
   if (id==='admin') { handleAdminNav(); return; }
   if (id==='upload' && !state.isAdmin) return;
+  if (id==='mypicks') {
+    if (!state.currentUser) { openLoginModal('user'); return; }
+    const pName = state.currentUser.participantName;
+    const lockData = state.userLocks[pName] || {};
+    if (lockData.locked === true) {
+      // Locked users cannot access My Picks - bounce to dashboard
+      _showPageDirect('dashboard');
+      document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelector('.nav-tab').classList.add('active');
+      return;
+    }
+  }
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
   _showPageDirect(id);
   if (id==='dashboard'||id==='leaderboard') uiRefresh();
 }
+
 function showAdminTab(id) {
   document.querySelectorAll('[id^="adminTab-"]').forEach(el=>el.style.display='none');
   document.getElementById('adminTab-'+id).style.display='block';
   document.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  if (id==='users') refreshUserList();
+  if (id==='phase2') refreshPhase2LockList();
 }
 
 // ============================================================
@@ -830,67 +1793,9 @@ function parseParticipant(raw, filename) {
       }
     }
   }
-  for (let r=0; r<raw.length; r++) {
-    const row=raw[r]; if(!row) continue;
-    for (let c=0; c<row.length; c++) {
-      if (row[c]==='Group'&&raw[r][c+1]==='My 1st') {
-        for (let gr=r+1; gr<raw.length; gr++) {
-          if (raw[gr]&&/^Group [A-L]$/.test(String(raw[gr][c]))) {
-            gtp[String(raw[gr][c]).trim()]={first:raw[gr][c+1]||null,second:raw[gr][c+2]||null};
-          }
-        }
-        break;
-      }
-    }
-  }
   const fm=km.find(m=>m.stage==='Final'||m.id.toLowerCase().includes('final'));
   const pc=fm?fm.predWinner||fm.home:null;
   db.collection("participants").doc(name).set({name,filename,groupMatches:gm,koMatches:km,r32Picks:r32,groupTopPicks:gtp,predictedChampion:pc});
-}
-
-// ============================================================
-// SCORING
-// ============================================================
-function scoreParticipant(p) {
-  let gmp=0,esp=0,r32p=0,gtp=0,ec=0,rc=0,kp=0,ke=0;
-  if (!p.groupMatches) return {groupMatchPts:0,exactScoresPts:0,r32Pts:0,groupTopPts:0,koPts:0,phase1Total:0,total:0,exactCount:0,resultCount:0};
-  p.groupMatches.forEach(m=>{
-    const a=state.actualResults[m.id];
-    if(!a||a.home===null||a.home===undefined||a.home==='') return;
-    const ah=parseInt(a.home),aa=parseInt(a.away),mh=parseInt(m.myHome),ma=parseInt(m.myAway);
-    if(isNaN(ah)||isNaN(aa)||isNaN(mh)||isNaN(ma)) return;
-    if(mh===ah&&ma===aa){esp+=2;ec++;rc++;}
-    else if((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)){gmp+=1;rc++;}
-  });
-  const q=new Set();
-  Object.keys(state.koActualResults).forEach(mid=>{
-    if(mid.startsWith('R32')){
-      if(state.koActualResults[mid].homeTeam) q.add(state.koActualResults[mid].homeTeam);
-      if(state.koActualResults[mid].awayTeam) q.add(state.koActualResults[mid].awayTeam);
-    }
-  });
-  if(q.size>0&&p.r32Picks) p.r32Picks.forEach(t=>{if(q.has(t))r32p++;});
-  if(p.koMatches) p.koMatches.forEach(m=>{
-    const a=state.koActualResults[m.id];
-    if(!a||a.home===null||a.home===undefined||a.home==='') return;
-    const ah=parseInt(a.home),aa=parseInt(a.away),mh=parseInt(m.myHome),ma=parseInt(m.myAway);
-    if(isNaN(ah)||isNaN(aa)||isNaN(mh)||isNaN(ma)) return;
-    if(mh===ah&&ma===aa){kp+=2;ke++;}
-    else if((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)){kp+=1;}
-    const s=m.stage.toUpperCase();
-    const adv=s==='R16'||s==='QF'?1:s==='SF'?2:s.includes('FINAL')&&!s.includes('3RD')?4:0;
-    if(adv>0&&!(a.homeTeam===m.home&&a.awayTeam===m.away)){
-      if(q.has(m.home)||m.home===a.homeTeam||m.home===a.awayTeam) kp+=adv;
-      if(q.has(m.away)||m.away===a.homeTeam||m.away===a.awayTeam) kp+=adv;
-    }
-  });
-  if(state.actualChampion&&p.predictedChampion&&String(p.predictedChampion).trim()===state.actualChampion) kp+=10;
-  const pt=gmp+esp+r32p+gtp;
-  return {groupMatchPts:gmp,exactScoresPts:esp,r32Pts:r32p,groupTopPts:gtp,koPts:kp,phase1Total:pt,total:pt+kp,exactCount:ec+ke,resultCount:rc};
-}
-function getAllScores() {
-  return Object.entries(state.participants).map(([n,p])=>({name:n,...scoreParticipant(p)}))
-    .sort((a,b)=>b.total-a.total||b.exactCount-a.exactCount);
 }
 
 // ============================================================
@@ -914,14 +1819,14 @@ function refreshDashboard() {
     <div class="winner-crown-bar">
       <div class="wc-label">🏆 Current Championship Leader</div>
       <div class="wc-name">${leader.name}</div>
-      <div class="wc-pts">${leader.total} Points</div>
+      <div class="wc-pts">${leader.total} Points · Phase 1: ${leader.phase1Total} · Phase 2: ${leader.koPts}</div>
     </div>`:'';
   document.getElementById('statsRow').innerHTML=`
     <div class="stat-card"><div class="val">${names.length}</div><div class="lbl">Participants</div></div>
     <div class="stat-card"><div class="val">${tm}</div><div class="lbl">Matches Scored</div></div>
-    <div class="stat-card"><div class="val">${72-tm}</div><div class="lbl">Group Remaining</div></div>
+    <div class="stat-card"><div class="val">${72-tm>0?72-tm:0}</div><div class="lbl">Group Remaining</div></div>
     <div class="stat-card"><div class="val">${leader?leader.total:0}</div><div class="lbl">Top Score</div></div>`;
-  const top3=scores.slice(0,3); while(top3.length<3)top3.push(null);
+  const top3=scores.slice(0,3); while(top3.length<3) top3.push(null);
   const order=[top3[1],top3[0],top3[2]],cl=['podium-2','podium-1','podium-3'],lb=['2nd','1st','3rd'];
   document.getElementById('podiumEl').innerHTML=order.map((p,i)=>p?`
     <div class="podium-place ${cl[i]}">
@@ -953,21 +1858,17 @@ function drawBar(scores) {
     grad.addColorStop(0,i===0?'#ffd700':'#1e3a8a');
     grad.addColorStop(1,i===0?'rgba(255,215,0,0.3)':'rgba(30,58,138,0.3)');
     ctx.fillStyle=grad;
-    ctx.beginPath();
-    ctx.roundRect(x,y,barW,bh,[4,4,0,0]);
-    ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x,y,barW,bh,[4,4,0,0]); ctx.fill();
     ctx.fillStyle=i===0?'#ffd700':'#94a3b8';
-    ctx.font=`bold 10px JetBrains Mono`;
-    ctx.textAlign='center';
+    ctx.font='bold 10px JetBrains Mono'; ctx.textAlign='center';
     ctx.fillText(s.total,x+barW/2,y-5);
-    ctx.fillStyle='#64748b';
-    ctx.font='10px Plus Jakarta Sans';
+    ctx.fillStyle='#64748b'; ctx.font='10px Plus Jakarta Sans';
     ctx.fillText(s.name.slice(0,6),x+barW/2,H-8);
   });
 }
 
 // ============================================================
-// PLAYER PROFILE DETAIL — EXPANDED WITH PREDICTION BREAKDOWN
+// PLAYER PROFILE DETAIL
 // ============================================================
 function showDetail(name) {
   const p = state.participants[name]; if (!p) return;
@@ -975,18 +1876,13 @@ function showDetail(name) {
   document.getElementById('dashboardContent').style.display='none';
   const dv = document.getElementById('detailView'); dv.style.display='block';
 
-  // Compute prediction accuracy stats
   const totalGroupPlayed = p.groupMatches ? p.groupMatches.filter(m => {
     const a = state.actualResults[m.id];
     return a && a.home !== '' && a.home !== null && a.home !== undefined;
   }).length : 0;
   const totalGroupPredicted = p.groupMatches ? p.groupMatches.filter(m => m.myHome !== null && m.myHome !== undefined && m.myHome !== '').length : 0;
-  const exactCount = s.exactCount;
-  const correctCount = s.resultCount;
-  const accuracyPct = totalGroupPlayed > 0 ? Math.round((correctCount / totalGroupPlayed) * 100) : 0;
-  const exactPct = totalGroupPlayed > 0 ? Math.round((s.exactScoresPts / 2 / totalGroupPlayed) * 100) : 0;
+  const accuracyPct = totalGroupPlayed > 0 ? Math.round((s.resultCount / totalGroupPlayed) * 100) : 0;
 
-  // Build group match prediction rows
   let groupRows = '';
   if (p.groupMatches) {
     p.groupMatches.forEach(m => {
@@ -997,198 +1893,108 @@ function showDetail(name) {
       let pts = null, rowCls = '';
       if (hasActual && hasPred) {
         const ah = parseInt(actual.home), aa = parseInt(actual.away);
-        if (mh === ah && ma === aa) { pts = 2; rowCls = 'pred-result-exact'; }
-        else if ((ah > aa && mh > ma) || (ah < aa && mh < ma) || (ah === aa && mh === ma)) { pts = 1; rowCls = 'pred-result-correct'; }
-        else { pts = 0; rowCls = 'pred-result-wrong'; }
+        if (mh===ah&&ma===aa) { pts=2; rowCls='pred-result-exact'; }
+        else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) { pts=1; rowCls='pred-result-correct'; }
+        else { pts=0; rowCls='pred-result-wrong'; }
       }
       const predStr = hasPred ? `${mh} – ${ma}` : '<span style="color:var(--text-muted)">—</span>';
       const actualStr = hasActual ? `${actual.home} – ${actual.away}` : '<span style="color:var(--text-muted)">TBD</span>';
-      const ptsBadge = pts === null
-        ? `<span class="pred-pts-badge pts-pend">—</span>`
-        : pts === 2 ? `<span class="pred-pts-badge pts-2">2</span>`
-        : pts === 1 ? `<span class="pred-pts-badge pts-1">1</span>`
-        : `<span class="pred-pts-badge pts-0">0</span>`;
-      groupRows += `<tr class="${rowCls}">
-        <td class="pt-match">${m.id}</td>
-        <td style="font-size:13px;font-weight:600">${m.home}</td>
-        <td style="font-size:13px;font-weight:600">${m.away}</td>
-        <td class="pt-score">${predStr}</td>
-        <td class="pt-score">${actualStr}</td>
-        <td>${ptsBadge}</td>
-      </tr>`;
+      const ptsBadge = pts===null?`<span class="pred-pts-badge pts-pend">—</span>`:pts===2?`<span class="pred-pts-badge pts-2">2</span>`:pts===1?`<span class="pred-pts-badge pts-1">1</span>`:`<span class="pred-pts-badge pts-0">0</span>`;
+      groupRows += `<tr class="${rowCls}"><td class="pt-match">${m.id}</td><td style="font-size:13px;font-weight:600">${m.home}</td><td style="font-size:13px;font-weight:600">${m.away}</td><td class="pt-score">${predStr}</td><td class="pt-score">${actualStr}</td><td>${ptsBadge}</td></tr>`;
     });
   }
 
-  // KO picks
+  // KO picks — show in-app Phase 2 picks or xlsx picks
+  const lockData = state.userLocks[name] || {};
+  const p2Preds = lockData.phase2Predictions || {};
+  const isP2Locked = lockData.locked === true;
+
   let koPicksHtml = '';
-  if (p.koMatches && p.koMatches.length) {
-    koPicksHtml = '<div class="ko-picks-grid">';
-    p.koMatches.forEach(m => {
+  const sampleParticipant = Object.values(state.participants)[0];
+  const fixtureTemplate = sampleParticipant?.koMatches || [];
+
+  if (fixtureTemplate.length) {
+    koPicksHtml = `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">`;
+    koPicksHtml += isP2Locked ? `<span class="lock-status-badge lock-locked">🔒 Phase 2 Submitted</span>` : Object.keys(p2Preds).length > 0 ? `<span class="lock-status-badge lock-unlocked">✏️ In Progress</span>` : `<span class="lock-status-badge lock-notstarted">— Not submitted</span>`;
+    koPicksHtml += `</div><div class="ko-picks-grid">`;
+
+    fixtureTemplate.forEach(m => {
+      const pred = p2Preds[m.id] || { myHome: m.myHome, myAway: m.myAway };
       const actual = state.koActualResults[m.id];
-      const hasPred = (m.myHome !== null && m.myHome !== undefined && m.myHome !== '');
       const hasActual = actual && actual.home !== '' && actual.home !== null;
-      const predWin = m.penWinner || (parseInt(m.myHome) > parseInt(m.myAway) ? m.home : parseInt(m.myHome) < parseInt(m.myAway) ? m.away : m.predWinner) || m.predWinner || '?';
-      const actualWin = hasActual ? (actual.winner || (parseInt(actual.home) > parseInt(actual.away) ? m.home : m.away)) : null;
-      let resCls = 'ko-pick-result-pending', resIcon = '';
+      const mh = parseInt(pred.myHome), ma = parseInt(pred.myAway);
+      const hasPred = !isNaN(mh) && !isNaN(ma);
+      let resCls = 'ko-pick-result-pending';
       if (hasActual && hasPred) {
-        const mh = parseInt(m.myHome), ma = parseInt(m.myAway), ah = parseInt(actual.home), aa = parseInt(actual.away);
-        if (mh === ah && ma === aa) { resCls = 'ko-pick-result-correct'; resIcon = '✓ Exact'; }
-        else if ((ah > aa && mh > ma) || (ah < aa && mh < ma)) { resCls = 'ko-pick-result-correct'; resIcon = '✓'; }
-        else { resCls = 'ko-pick-result-wrong'; resIcon = '✗'; }
+        const ah=parseInt(actual.home), aa=parseInt(actual.away);
+        if (mh===ah&&ma===aa) resCls='pred-result-exact';
+        else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) resCls='pred-result-correct';
+        else resCls='pred-result-wrong';
       }
+      const rp = ROUND_PTS[m.stage]||ROUND_PTS['R32'];
       koPicksHtml += `<div class="ko-pick-item">
         <div class="ko-pick-stage">${m.stage}</div>
-        <div class="ko-pick-teams">
-          <span class="ko-pick-team">${m.home||'TBD'}</span>
-          <span style="color:var(--text-muted);font-size:11px;font-family:'JetBrains Mono',monospace">vs</span>
-          <span class="ko-pick-team">${m.away||'TBD'}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="ko-pick-prediction ${resCls}">${hasPred?`${m.myHome} – ${m.myAway}`:'—'}</span>
-          <span style="font-size:11px;color:var(--text-muted)">${resIcon}</span>
-        </div>
+        <div class="ko-pick-teams" style="font-size:13px;font-weight:600;margin-bottom:6px">${m.home||'TBD'} vs ${m.away||'TBD'}</div>
+        <div class="ko-pick-prediction ${resCls}">${hasPred?`${mh} – ${ma}`:'—'}</div>
+        ${hasActual?`<div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace">Actual: ${actual.home} – ${actual.away}</div>`:''}
       </div>`;
     });
     koPicksHtml += '</div>';
   } else {
-    koPicksHtml = '<p style="color:var(--text-muted);font-size:13px;">No knockout predictions found in sheet.</p>';
+    koPicksHtml = '<p style="color:var(--text-muted);font-size:13px;">No knockout fixtures defined yet.</p>';
   }
 
-  // R32 Picks
-  let r32Html = '';
-  if (p.r32Picks && p.r32Picks.length) {
-    const qualified = new Set();
-    Object.keys(state.koActualResults).forEach(mid => {
-      if (mid.startsWith('R32')) {
-        if (state.koActualResults[mid].homeTeam) qualified.add(state.koActualResults[mid].homeTeam);
-        if (state.koActualResults[mid].awayTeam) qualified.add(state.koActualResults[mid].awayTeam);
-      }
-    });
-    r32Html = `<div style="display:flex;flex-wrap:wrap;gap:8px;">`;
-    p.r32Picks.forEach(t => {
-      const isCorrect = qualified.size > 0 && qualified.has(t);
-      const isWrong = qualified.size === 32 && !qualified.has(t);
-      r32Html += `<span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;
-        background:${isCorrect?'rgba(56,239,125,0.12)':isWrong?'rgba(255,71,87,0.1)':'rgba(255,255,255,0.05)'};
-        border:1px solid ${isCorrect?'rgba(56,239,125,0.3)':isWrong?'rgba(255,71,87,0.2)':'var(--border)'};
-        color:${isCorrect?'var(--accent)':isWrong?'var(--red)':'var(--text-secondary)'}">${t}</span>`;
-    });
-    r32Html += `</div><p style="margin-top:12px;font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${s.r32Pts} / ${p.r32Picks.length} picks correct · ${qualified.size > 0 ? qualified.size+' teams qualified known' : 'R32 not started yet'}</p>`;
-  } else {
-    r32Html = '<p style="color:var(--text-muted);font-size:13px;">No R32 picks found in sheet.</p>';
-  }
-
-  // Progress ring SVG
-  const ringPct = Math.min(100, Math.round((s.total / 320) * 100));
-  const circ = 2 * Math.PI * 36; // r=36
+  const ringPct = Math.min(100, Math.round((s.total / 259) * 100));
+  const circ = 2 * Math.PI * 36;
   const offset = circ * (1 - ringPct / 100);
 
-  dv.innerHTML = `<div class="detail-wrapper">
-    <button class="save-btn" style="margin-bottom:20px" onclick="backToDashboard()">← Back to Dashboard</button>
-
-    <!-- PROFILE HERO -->
+  dv.innerHTML = `<div>
+    <button class="save-btn" style="margin-bottom:20px" onclick="backToDashboard()">← Back</button>
     <div class="profile-hero">
       <div class="profile-avatar-lg">${name.slice(0,2).toUpperCase()}</div>
       <div>
         <div class="profile-name">${name}</div>
-        <div class="profile-sub">${s.total} points · Rank #${getAllScores().findIndex(x=>x.name===name)+1}</div>
+        <div class="profile-sub">${s.total} pts · Rank #${getAllScores().findIndex(x=>x.name===name)+1} · Phase 1: ${s.phase1Total} · Phase 2: ${s.koPts}</div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-          ${s.exactCount > 0 ? `<span style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">⚡ ${s.exactCount} Exact Scores</span>` : ''}
-          ${s.resultCount > 0 ? `<span style="background:rgba(56,239,125,0.1);border:1px solid rgba(56,239,125,0.2);color:var(--accent);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">✓ ${s.resultCount} Correct Results</span>` : ''}
-          ${p.predictedChampion ? `<span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-secondary);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">🏆 ${p.predictedChampion}</span>` : ''}
+          ${s.exactCount>0?`<span style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">⚡ ${s.exactCount} Exact</span>`:''}
+          ${s.resultCount>0?`<span style="background:rgba(56,239,125,0.1);border:1px solid rgba(56,239,125,0.2);color:var(--accent);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">✓ ${s.resultCount} Correct</span>`:''}
+          ${s.predictedChampion?`<span style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-secondary);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">🏆 ${s.predictedChampion}</span>`:''}
         </div>
       </div>
       <div class="progress-ring-wrap">
         <svg width="96" height="96" viewBox="0 0 96 96">
           <circle cx="48" cy="48" r="36" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-          <circle cx="48" cy="48" r="36" fill="none" stroke="${s.total > 0 ? 'var(--gold)' : 'var(--border)'}"
+          <circle cx="48" cy="48" r="36" fill="none" stroke="${s.total>0?'var(--gold)':'var(--border)'}"
             stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}"
             stroke-dashoffset="${offset}" transform="rotate(-90 48 48)"
             style="transition:stroke-dashoffset 1.2s ease"/>
           <text x="48" y="48" text-anchor="middle" dominant-baseline="central"
             font-family="'Bebas Neue',cursive" font-size="22" fill="var(--gold)">${ringPct}%</text>
         </svg>
-        <div class="progress-ring-label">of ~320 pts</div>
+        <div class="progress-ring-label">of 259 max</div>
       </div>
     </div>
 
-    <!-- CHAMPION PREDICTION -->
-    ${p.predictedChampion ? `<div class="champion-predict-card">
-      <div class="champion-trophy">🏆</div>
-      <div>
-        <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Predicted Champion</div>
-        <div class="champion-pick-name">${p.predictedChampion}</div>
-        <div class="champion-pick-sub">${state.actualChampion ? (state.actualChampion === p.predictedChampion ? '✅ CORRECT — +10 pts' : '❌ Wrong — '+state.actualChampion+' won') : 'Tournament in progress...'}</div>
-      </div>
-      ${state.actualChampion && state.actualChampion === p.predictedChampion ? '<div class="champion-correct">🎉 +10</div>' : ''}
-    </div>` : ''}
-
-    <!-- QUICK ACCURACY STATS -->
     <div class="prediction-accuracy-grid" style="margin-bottom:24px">
-      <div class="acc-card">
-        <div class="acc-val" style="color:var(--gold)">${s.total}</div>
-        <div class="acc-label">Total Points</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.total/320)*100)}%;background:var(--gold)"></div></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-val" style="color:var(--neon-blue)">${accuracyPct}%</div>
-        <div class="acc-label">Result Accuracy</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${accuracyPct}%;background:var(--neon-blue)"></div></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-val" style="color:var(--accent)">${s.exactCount}</div>
-        <div class="acc-label">Exact Scores</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${exactPct}%;background:var(--accent)"></div></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-val" style="color:#a855f7">${s.koPts}</div>
-        <div class="acc-label">KO Stage Pts</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.koPts/80)*100)}%;background:#a855f7"></div></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-val" style="color:var(--text-primary)">${totalGroupPredicted}</div>
-        <div class="acc-label">Predictions Made</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(totalGroupPredicted/72)*100)}%;background:var(--text-secondary)"></div></div>
-      </div>
-      <div class="acc-card">
-        <div class="acc-val" style="color:#f97316">${s.r32Pts}</div>
-        <div class="acc-label">R32 Picks Right</div>
-        <div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.r32Pts/32)*100)}%;background:#f97316"></div></div>
-      </div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--gold)">${s.total}</div><div class="acc-label">Total Points</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.total/259)*100)}%;background:var(--gold)"></div></div></div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--neon-blue)">${s.phase1Total}</div><div class="acc-label">Phase 1 Pts</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.phase1Total/144)*100)}%;background:var(--neon-blue)"></div></div></div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--purple)">${s.koPts}</div><div class="acc-label">Phase 2 Pts</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.koPts/115)*100)}%;background:var(--purple)"></div></div></div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--accent)">${accuracyPct}%</div><div class="acc-label">Accuracy</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${accuracyPct}%;background:var(--accent)"></div></div></div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--text-primary)">${s.exactCount}</div><div class="acc-label">Exact Scores</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(s.exactCount/88)*100)}%;background:var(--text-secondary)"></div></div></div>
+      <div class="acc-card"><div class="acc-val" style="color:var(--orange)">${totalGroupPredicted}</div><div class="acc-label">Predictions</div><div class="acc-bar-wrap"><div class="acc-bar-fill" style="width:${Math.min(100,(totalGroupPredicted/72)*100)}%;background:var(--orange)"></div></div></div>
     </div>
 
-    <!-- DETAIL TABS -->
     <div class="detail-tabs">
-      <button class="detail-tab active" onclick="switchDetailTab('group',this)">⚽ Group Predictions (${(p.groupMatches||[]).length})</button>
-      <button class="detail-tab" onclick="switchDetailTab('ko',this)">🏟️ Knockout Picks (${(p.koMatches||[]).length})</button>
-      <button class="detail-tab" onclick="switchDetailTab('r32',this)">🎯 R32 Picks (${(p.r32Picks||[]).length})</button>
+      <button class="detail-tab active" onclick="switchDetailTab('group',this)">⚽ Group Predictions</button>
+      <button class="detail-tab" onclick="switchDetailTab('ko',this)">🏟️ Knockout Picks</button>
     </div>
-
     <div id="detail-tab-group" class="detail-tab-content active">
-      <div style="overflow-x:auto">
-        <table class="pred-table">
-          <thead>
-            <tr>
-              <th>Match</th>
-              <th>Home</th>
-              <th>Away</th>
-              <th>My Prediction</th>
-              <th>Actual Score</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>${groupRows || '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:24px">No group stage data found in sheet</td></tr>'}</tbody>
-        </table>
-      </div>
+      <div style="overflow-x:auto"><table class="pred-table">
+        <thead><tr><th>Match</th><th>Home</th><th>Away</th><th>My Prediction</th><th>Actual</th><th>Pts</th></tr></thead>
+        <tbody>${groupRows||'<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:24px">No group stage data</td></tr>'}</tbody>
+      </table></div>
     </div>
-
-    <div id="detail-tab-ko" class="detail-tab-content">
-      ${koPicksHtml}
-    </div>
-
-    <div id="detail-tab-r32" class="detail-tab-content">
-      ${r32Html}
-    </div>
+    <div id="detail-tab-ko" class="detail-tab-content">${koPicksHtml}</div>
   </div>`;
 }
 
@@ -1209,25 +2015,24 @@ function backToDashboard() {
 // ============================================================
 function refreshLeaderboard() {
   const names=Object.keys(state.participants);
-  if(!names.length){
-    document.getElementById('lbEmpty').style.display='';
-    document.getElementById('lbContent').style.display='none';
-    return;
-  }
+  if(!names.length){ document.getElementById('lbEmpty').style.display=''; document.getElementById('lbContent').style.display='none'; return; }
   document.getElementById('lbEmpty').style.display='none';
   document.getElementById('lbContent').style.display='block';
   const medal=['🥇','🥈','🥉'];
-  document.getElementById('lbBody').innerHTML=getAllScores().map((s,i)=>`
-    <tr>
+  document.getElementById('lbBody').innerHTML=getAllScores().map((s,i)=>{
+    const lockData = state.userLocks[s.name]||{};
+    const lockBadge = lockData.locked ? `<span class="lock-status-badge lock-locked" style="font-size:11px">🔒 Submitted</span>` : Object.keys(lockData.phase2Predictions||{}).length>0 ? `<span class="lock-status-badge lock-unlocked" style="font-size:11px">✏️ Draft</span>` : `<span class="lock-status-badge lock-notstarted" style="font-size:11px">—</span>`;
+    return `<tr>
       <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-muted)">${medal[i]||i+1}</td>
       <td class="pname" style="cursor:pointer;" onclick="showPage('dashboard');setTimeout(()=>showDetail('${s.name}'),200)">${s.name}</td>
       <td class="sub-cell">${s.phase1Total}</td>
       <td class="sub-cell">${s.koPts}</td>
-      <td class="sub-cell">—</td>
       <td class="pts-cell">${s.total}</td>
       <td class="sub-cell">${s.exactCount}</td>
       <td class="sub-cell">${s.resultCount}</td>
-    </tr>`).join('');
+      <td>${lockBadge}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ============================================================
@@ -1239,26 +2044,12 @@ function buildAdminMatches() {
   if(!sample){
     document.getElementById('adminGroupMatches').innerHTML=`<div class="empty-state"><p>Upload at least one participant sheet to initialize match structures.</p></div>`;
     document.getElementById('adminKOMatches').innerHTML='';
-    state._adminBuilt = false;
-    return;
+    state._adminBuilt=false; return;
   }
+  if(state._adminBuilt&&!ro){ _patchAdminInputs(sample); return; }
+  state._adminBuilt=false;
+  if(!ro&&sample.groupMatches[0]&&document.getElementById('ah_'+sample.groupMatches[0].id)){ _patchAdminInputs(sample); return; }
 
-  // After the first full build, subsequent Firestore onSnapshot calls just
-  // patch values in-place so inputs aren't destroyed while admin is editing.
-  if (state._adminBuilt && !ro) {
-    _patchAdminInputs(sample);
-    return;
-  }
-  state._adminBuilt = false; // will be set true after full build below
-
-
-  // KEY FIX: if admin inputs already exist, patch values in-place
-  // instead of rebuilding DOM — prevents the save->onSnapshot->re-render
-  // race that was resetting typed values and showing – for all matches.
-  if (!ro && sample.groupMatches[0] && document.getElementById('ah_' + sample.groupMatches[0].id)) {
-    _patchAdminInputs(sample);
-    return;
-  }
   let groups={};
   sample.groupMatches.forEach(m=>{const l=m.id[0];if(!groups[l])groups[l]=[];groups[l].push(m);});
   let html=ro?`<div class="alert alert-info">🔒 View-only. Login as admin to update scores.</div>`:'';
@@ -1271,11 +2062,7 @@ function buildAdminMatches() {
         :`<input type="number" class="score-input" id="ah_${m.id}" value="${res.home}" placeholder="0"><span class="score-dash">:</span><input type="number" class="score-input" id="aa_${m.id}" value="${res.away}" placeholder="0">`;
       html+=`<div class="match-card">
         <div class="match-id">${m.id}</div>
-        <div class="match-teams">
-          <div class="team-name">${m.home}</div>
-          <div class="score-inputs">${fields}</div>
-          <div class="team-name away">${m.away}</div>
-        </div>
+        <div class="match-teams"><div class="team-name">${m.home}</div><div class="score-inputs">${fields}</div><div class="team-name away">${m.away}</div></div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="match-status ${has?'status-played':'status-pending'}" id="st_${m.id}">${has?'✓ Finalized':'Pending'}</span>
           ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${m.home.replace(/"/g,'&quot;')}" data-away="${m.away.replace(/"/g,'&quot;')}" onclick="saveResult(this.dataset.mid,this.dataset.home,this.dataset.away)">Save</button>`}
@@ -1285,13 +2072,14 @@ function buildAdminMatches() {
     html+='</div></div>';
   });
   document.getElementById('adminGroupMatches').innerHTML=html;
-  state._adminBuilt = true;
+  state._adminBuilt=true;
 
   let koh=''; const stages={R32:[],R16:[],QF:[],SF:[],Final:[],'3rd':[]};
   sample.koMatches.forEach(m=>{if(stages[m.stage])stages[m.stage].push(m);});
   Object.entries(stages).forEach(([stg,matches])=>{
     if(!matches.length) return;
-    koh+=`<div class="match-section"><div class="section-header">${stg}</div><div class="match-grid">`;
+    const rp = ROUND_PTS[stg]||ROUND_PTS['R32'];
+    koh+=`<div class="match-section"><div class="section-header" style="display:flex;justify-content:space-between">${stg}<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)">Correct: ${rp.correct}pt | Exact: ${rp.exact}pt</span></div><div class="match-grid">`;
     matches.forEach(m=>{
       const res=state.koActualResults[m.id]||{home:'',away:'',winner:''};
       const has=res.home!==undefined&&res.home!=='';
@@ -1329,106 +2117,83 @@ function buildAdminMatches() {
   document.getElementById('adminKOMatches').innerHTML=koh;
 }
 
-// Patch only the status badges and input values without destroying the DOM.
-// Called by buildAdminMatches when inputs already exist, to avoid re-render races.
 function _patchAdminInputs(sample) {
   sample.groupMatches.forEach(m => {
-    const res = state.actualResults[m.id] || { home:'', away:'' };
-    const has = res.home !== undefined && res.home !== '';
-    const hEl = document.getElementById('ah_' + m.id);
-    const aEl = document.getElementById('aa_' + m.id);
-    const stEl = document.getElementById('st_' + m.id);
-    // Only overwrite the input if it isn't currently focused (user is typing)
-    if (hEl && document.activeElement !== hEl) hEl.value = res.home;
-    if (aEl && document.activeElement !== aEl) aEl.value = res.away;
-    if (stEl) {
-      stEl.textContent = has ? '✓ Finalized' : 'Pending';
-      stEl.className = 'match-status ' + (has ? 'status-played' : 'status-pending');
-    }
+    const res=state.actualResults[m.id]||{home:'',away:''};
+    const has=res.home!==undefined&&res.home!=='';
+    const hEl=document.getElementById('ah_'+m.id), aEl=document.getElementById('aa_'+m.id), stEl=document.getElementById('st_'+m.id);
+    if(hEl&&document.activeElement!==hEl) hEl.value=res.home;
+    if(aEl&&document.activeElement!==aEl) aEl.value=res.away;
+    if(stEl){ stEl.textContent=has?'✓ Finalized':'Pending'; stEl.className='match-status '+(has?'status-played':'status-pending'); }
   });
   sample.koMatches.forEach(m => {
-    const res = state.koActualResults[m.id] || { home:'', away:'', winner:'' };
-    const has = res.home !== undefined && res.home !== '';
-    const safe = m.id.replace(/[^a-z0-9]/gi, '_');
-    const hEl = document.getElementById('kah_' + safe);
-    const aEl = document.getElementById('kaa_' + safe);
-    const wEl = document.getElementById('kpw_' + safe);
-    const stEl = document.getElementById('kst_' + safe);
-    if (hEl && document.activeElement !== hEl) hEl.value = res.home;
-    if (aEl && document.activeElement !== aEl) aEl.value = res.away;
-    if (wEl && document.activeElement !== wEl) wEl.value = res.winner || '';
-    if (stEl) {
-      stEl.textContent = has ? '✓ Finalized' : 'Pending';
-      stEl.className = 'match-status ' + (has ? 'status-played' : 'status-pending');
-    }
+    const res=state.koActualResults[m.id]||{home:'',away:'',winner:''};
+    const has=res.home!==undefined&&res.home!=='';
+    const safe=m.id.replace(/[^a-z0-9]/gi,'_');
+    const hEl=document.getElementById('kah_'+safe), aEl=document.getElementById('kaa_'+safe), wEl=document.getElementById('kpw_'+safe), stEl=document.getElementById('kst_'+safe);
+    if(hEl&&document.activeElement!==hEl) hEl.value=res.home;
+    if(aEl&&document.activeElement!==aEl) aEl.value=res.away;
+    if(wEl&&document.activeElement!==wEl) wEl.value=res.winner||'';
+    if(stEl){ stEl.textContent=has?'✓ Finalized':'Pending'; stEl.className='match-status '+(has?'status-played':'status-pending'); }
   });
-  // Update champion input too
-  const chEl = document.getElementById('championInput');
-  if (chEl && document.activeElement !== chEl) chEl.value = state.actualChampion || '';
+  const chEl=document.getElementById('championInput');
+  if(chEl&&document.activeElement!==chEl) chEl.value=state.actualChampion||'';
 }
 
 // ============================================================
 // SAVE HANDLERS
 // ============================================================
-// CRITICAL RULES:
-//  1. Use update() with FieldPath dot-notation — this touches ONE field only,
-//     never overwrites sibling fields in the map.
-//  2. If the doc doesn't exist yet, set() with the FULL current state as
-//     a one-time initialiser, then retry the specific update.
-//  3. NEVER call set({actualResults: state.actualResults}) — that overwrites
-//     the entire map. Only write the single key that changed.
-
 const RESULTS_DOC = () => db.collection("tournamentState").doc("results");
+const PHASE2_DOC  = () => db.collection("tournamentState").doc("phase2");
 
 function _writeField(dotKey, value) {
-  // update() with a dot-notation key safely writes ONE nested field
-  const patch = {};
-  patch[dotKey] = value;
-  return RESULTS_DOC().update(patch).catch(() => {
-    // Doc doesn't exist yet — create it with full current state, then patch
-    return RESULTS_DOC().set({
-      actualResults:   state.actualResults,
-      koActualResults: state.koActualResults,
-      actualChampion:  state.actualChampion
-    }).then(() => RESULTS_DOC().update(patch));
-  });
+  const patch = {}; patch[dotKey] = value;
+  return RESULTS_DOC().update(patch).catch(() =>
+    RESULTS_DOC().set({ actualResults:state.actualResults, koActualResults:state.koActualResults, actualChampion:state.actualChampion })
+      .then(() => RESULTS_DOC().update(patch))
+  );
+}
+
+function _writePhase2Field(dotKey, value) {
+  const patch = {}; patch[dotKey] = value;
+  return PHASE2_DOC().update(patch).catch(() =>
+    PHASE2_DOC().set({ enabled:state.phase2Enabled, userLocks:state.userLocks })
+      .then(() => PHASE2_DOC().update(patch))
+  );
 }
 
 function saveResult(matchId, homeTeam, awayTeam) {
   if (!state.isAdmin) return;
-  const hv = document.getElementById('ah_' + matchId).value.trim();
-  const av = document.getElementById('aa_' + matchId).value.trim();
-  if (hv === '' || av === '') return;
-  const record = { home: parseInt(hv), away: parseInt(av), homeTeam, awayTeam };
-  state.actualResults[matchId] = record;                       // update in-memory first
-  _writeField(`actualResults.${matchId}`, record)              // write ONLY this one match
-    .catch(err => console.error('saveResult failed:', err));
+  const hv=document.getElementById('ah_'+matchId).value.trim();
+  const av=document.getElementById('aa_'+matchId).value.trim();
+  if(hv===''||av==='') return;
+  const record={home:parseInt(hv),away:parseInt(av),homeTeam,awayTeam};
+  state.actualResults[matchId]=record;
+  _writeField(`actualResults.${matchId}`,record).catch(err=>console.error('saveResult failed:',err));
 }
 
 function saveKOResult(matchId, homeTeam, awayTeam) {
   if (!state.isAdmin) return;
-  const safe = matchId.replace(/[^a-z0-9]/gi, '_');
-  const hv  = document.getElementById('kah_' + safe).value.trim();
-  const av  = document.getElementById('kaa_' + safe).value.trim();
-  const win = document.getElementById('kpw_' + safe).value.trim();
-  if (hv === '' || av === '') return;
-  const record = { home: parseInt(hv), away: parseInt(av), winner: win, homeTeam, awayTeam };
-  state.koActualResults[matchId] = record;
-  _writeField(`koActualResults.${matchId}`, record)
-    .catch(err => console.error('saveKOResult failed:', err));
+  const safe=matchId.replace(/[^a-z0-9]/gi,'_');
+  const hv=document.getElementById('kah_'+safe).value.trim();
+  const av=document.getElementById('kaa_'+safe).value.trim();
+  const win=document.getElementById('kpw_'+safe).value.trim();
+  if(hv===''||av==='') return;
+  const record={home:parseInt(hv),away:parseInt(av),winner:win,homeTeam,awayTeam};
+  state.koActualResults[matchId]=record;
+  _writeField(`koActualResults.${matchId}`,record).catch(err=>console.error('saveKOResult failed:',err));
 }
 
 function saveChampion() {
   if (!state.isAdmin) return;
-  const v = document.getElementById('championInput').value.trim();
-  state.actualChampion = v || null;
-  _writeField('actualChampion', state.actualChampion)
-    .catch(err => console.error('saveChampion failed:', err));
+  const v=document.getElementById('championInput').value.trim();
+  state.actualChampion=v||null;
+  _writeField('actualChampion',state.actualChampion).catch(err=>console.error('saveChampion failed:',err));
   launchConfetti(3500);
 }
 
 // ============================================================
-// UPLOADED LIST
+// UPLOAD LIST
 // ============================================================
 function updateUploadedList() {
   const names=Object.keys(state.participants);
@@ -1440,6 +2205,7 @@ function updateUploadedList() {
       ${state.isAdmin?`<button class="save-btn" style="border-color:var(--red);color:var(--red)" onclick="removeParticipant('${n}')">Remove</button>`:''}
     </div>`).join('');
 }
+
 function removeParticipant(name) {
   if(!state.isAdmin||!confirm('Remove '+name+'?')) return;
   db.collection("participants").doc(name).delete();
