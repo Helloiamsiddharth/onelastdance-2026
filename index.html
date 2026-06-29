@@ -287,6 +287,12 @@
   .pts-table td { padding:10px 12px; border-bottom:1px solid rgba(30,41,59,0.4); font-size:13px; }
   .pts-table td:last-child { font-family:'JetBrains Mono',monospace; color:var(--gold); font-weight:700; }
 
+  /* KO RESULT ENTRY */
+  .ko-decide-btn { background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); font-size:12px; font-weight:600; padding:6px 12px; cursor:pointer; transition:all .15s; font-family:'Plus Jakarta Sans',sans-serif; }
+  .ko-decide-btn:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.3); color:var(--text-primary); }
+  .ko-decide-active { background:rgba(255,215,0,0.15) !important; border-color:rgba(255,215,0,0.5) !important; color:var(--gold) !important; }
+  .ko-winner-badge { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; padding:4px 12px; border-radius:20px; background:rgba(56,239,125,0.12); color:var(--accent); border:1px solid rgba(56,239,125,0.3); }
+
   @media (max-width:768px) {
     .page { padding:0 16px 60px; }
     nav { padding:0 16px; }
@@ -487,7 +493,7 @@
         <div class="scores-loading"><div class="spinner"></div> Loading...</div>
       </div>
       <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="saveAllR32Fixtures()">💾 Save All Fixtures</button>
+        <button class="btn btn-primary" onclick="saveAllR32Fixtures(this)">💾 Save All Fixtures</button>
         <button class="save-btn" onclick="renderAdminPhase2Setup()">↻ Refresh</button>
       </div>
     </div>
@@ -827,25 +833,18 @@ function scoreParticipant(p) {
   }
   p1total = gmp + esp;
 
-  // Phase 2: knockout picks (can come from xlsx OR from in-app Phase 2 entry)
-  // In-app picks override xlsx picks for each match
+  // Phase 2: use in-app Phase 2 predictions keyed by match ID (M73, M74, etc.)
   const lockData = state.userLocks[p.name] || {};
   const p2Preds = lockData.phase2Predictions || {};
 
-  // Build merged ko matches: prefer in-app over xlsx
+  // Build ko match map from hardcoded fixtures + override with in-app predictions
   const koMatchMap = {};
-
-  // First, seed from xlsx
-  if (p.koMatches) {
-    p.koMatches.forEach(m => { koMatchMap[m.id] = { ...m, source:'xlsx' }; });
-  }
-  // Override/add from in-app Phase 2 predictions
+  WC2026_KO_FIXTURES.forEach(m => { koMatchMap[m.id] = { ...m, source:'fixture' }; });
   Object.keys(p2Preds).forEach(mid => {
+    if (mid === 'champion') return;
     const pred = p2Preds[mid];
     if (koMatchMap[mid]) {
       koMatchMap[mid] = { ...koMatchMap[mid], myHome: pred.myHome, myAway: pred.myAway, penWinner: pred.penWinner||null, source:'inapp' };
-    } else {
-      koMatchMap[mid] = { id: mid, stage: pred.stage||mid.replace(/[0-9]/g,'').split('_')[0], home: pred.homeTeam||'?', away: pred.awayTeam||'?', myHome: pred.myHome, myAway: pred.myAway, penWinner: pred.penWinner||null, source:'inapp' };
     }
   });
 
@@ -1255,31 +1254,33 @@ function renderAdminPhase2Setup() {
   el.innerHTML = html;
 }
 
-function saveAllR32Fixtures() {
+function saveAllR32Fixtures(btn) {
   if (!state.isAdmin) return;
   const fixtures = [];
-  // R32 fixtures entered by admin
   R32_SLOT_IDS.forEach((id, i) => {
     const h = document.getElementById('r32h_'+i)?.value.trim() || '';
     const a = document.getElementById('r32a_'+i)?.value.trim() || '';
     fixtures.push({ id, stage:'R32', home:h, away:a });
   });
-  // Auto-generate R16, QF, SF, Final, 3rd slots (teams TBD — fill from results)
-  const r16 = Array.from({length:8},(_,i)=>({ id:`R16-${i+1}`, stage:'R16', home:'TBD', away:'TBD' }));
-  const qf  = Array.from({length:4},(_,i)=>({ id:`QF-${i+1}`,  stage:'QF',  home:'TBD', away:'TBD' }));
-  const sf  = Array.from({length:2},(_,i)=>({ id:`SF-${i+1}`,  stage:'SF',  home:'TBD', away:'TBD' }));
-  const fin = [{ id:'Final-1', stage:'Final', home:'TBD', away:'TBD' }];
-  const third = [{ id:'3rd-1', stage:'3rd', home:'TBD', away:'TBD' }];
+  const r16  = Array.from({length:8}, (_,i) => ({ id:`R16-${i+1}`,  stage:'R16',   home:'TBD', away:'TBD' }));
+  const qf   = Array.from({length:4}, (_,i) => ({ id:`QF-${i+1}`,   stage:'QF',    home:'TBD', away:'TBD' }));
+  const sf   = Array.from({length:2}, (_,i) => ({ id:`SF-${i+1}`,   stage:'SF',    home:'TBD', away:'TBD' }));
+  const fin  = [{ id:'Final-1', stage:'Final', home:'TBD', away:'TBD' }];
+  const third= [{ id:'3rd-1',   stage:'3rd',   home:'TBD', away:'TBD' }];
   const allFixtures = [...fixtures, ...r16, ...qf, ...sf, ...fin, ...third];
 
+  if (btn) { btn.textContent='Saving…'; btn.disabled=true; }
   db.collection("tournamentState").doc("phase2brackets").set({ fixtures: allFixtures })
     .then(() => {
-      const btn = event.target;
-      const orig = btn.textContent;
-      btn.textContent = '✅ Saved!'; btn.style.background='rgba(56,239,125,0.2)';
-      setTimeout(() => { btn.textContent=orig; btn.style.background=''; }, 2000);
+      if (btn) {
+        btn.textContent='✅ Saved!'; btn.style.background='rgba(56,239,125,0.2)';
+        setTimeout(() => { btn.textContent='💾 Save All Fixtures'; btn.style.background=''; btn.disabled=false; }, 2000);
+      }
     })
-    .catch(err => alert('Save failed: ' + err.message));
+    .catch(err => {
+      if (btn) { btn.textContent='💾 Save All Fixtures'; btn.disabled=false; }
+      alert('Save failed: ' + err.message);
+    });
 }
 
 function refreshPhase2LockList() {
@@ -1419,15 +1420,8 @@ function refreshMyPicks() {
   }
 
   // ── PHASE 2 VIEW (when Phase 2 is open) ───────────────────────────────────
-
-  // Build the ko match list from the sample participant's match structure (admin-defined fixtures)
-  const sampleParticipant = Object.values(state.participants)[0];
-  const fixtureTemplate = sampleParticipant?.koMatches || [];
-
-  if (!fixtureTemplate.length) {
-    el.innerHTML = `<div class="empty-state"><div class="es-icon">🏟️</div><p>No knockout fixtures defined yet.</p><p style="font-size:13px;color:var(--text-muted);margin-top:6px">Admin needs to confirm R32 bracket first.</p></div>`;
-    return;
-  }
+  // Always use the hardcoded WC2026_KO_FIXTURES — no dependency on xlsx data
+  const fixtureTemplate = WC2026_KO_FIXTURES;
 
   // Get actual KO results to show completed teams
   const actualKO = state.koActualResults;
@@ -1501,15 +1495,15 @@ function refreshMyPicks() {
 
     matches.forEach(m => {
       const pred = p2Preds[m.id] || {};
-      const predH = pred.myHome ?? (m.myHome ?? '');
-      const predA = pred.myAway ?? (m.myAway ?? '');
+      const predH = pred.myHome !== undefined && pred.myHome !== '' ? pred.myHome : '';
+      const predA = pred.myAway !== undefined && pred.myAway !== '' ? pred.myAway : '';
       const predPens = pred.penWinner || '';
-      const actualResult = actualKO[m.id];
+      const actualResult = state.koActualResults[m.id];
       const hasActual = actualResult && actualResult.home !== '' && actualResult.home !== null;
 
-      // Determine home/away team names — actual KO may have real teams
-      const homeTeam = actualResult?.homeTeam || m.home || 'TBD';
-      const awayTeam = actualResult?.awayTeam || m.away || 'TBD';
+      // Resolve team names — use actual KO results if available, else resolve from previous round winner, else use fixture name
+      const homeTeam = actualResult?.homeTeam || resolveTeamName(m.home);
+      const awayTeam = actualResult?.awayTeam || resolveTeamName(m.away);
 
       const isPredDraw = !isNaN(parseInt(predH)) && !isNaN(parseInt(predA)) && parseInt(predH) === parseInt(predA);
 
@@ -1534,7 +1528,10 @@ function refreshMyPicks() {
       const safe = m.id.replace(/[^a-z0-9]/gi,'_');
 
       html += `<div class="ko-entry-card">
-        <div class="match-id">${m.id} · ${stage}</div>
+        <div class="match-id" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <span>${m.id} · ${stage}</span>
+          <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${m.date} · ${(m.venue||'').split(',')[0]}</span>
+        </div>
         <div class="ko-entry-teams">
           <div class="ko-entry-team">
             <div class="ko-entry-team-name">${homeTeam}</div>
@@ -1592,7 +1589,7 @@ function refreshMyPicks() {
   if (!isLocked) {
     html += `<div style="display:flex;gap:12px;margin-top:32px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="submitPhase2()">🔒 Submit & Lock Predictions</button>
-      <button class="save-btn" onclick="savePhase2Draft()" style="padding:12px 24px">💾 Save Draft</button>
+      <button class="save-btn" onclick="savePhase2Draft(this)" style="padding:12px 24px">💾 Save Draft</button>
     </div>
     <p style="margin-top:12px;font-size:12px;color:var(--text-muted)">Submitting locks your picks permanently. Save Draft lets you continue later.</p>`;
   }
@@ -1601,7 +1598,6 @@ function refreshMyPicks() {
 }
 
 function autoSavePick(matchId, safe, homeTeam, awayTeam, stage) {
-  // Silent auto-save — no UI feedback, just persists to Firebase
   const hEl = document.getElementById('p2h_'+safe);
   const aEl = document.getElementById('p2a_'+safe);
   const pensEl = document.getElementById('p2pens_'+safe);
@@ -1612,19 +1608,24 @@ function autoSavePick(matchId, safe, homeTeam, awayTeam, stage) {
   const pName = state.currentUser?.participantName;
   if (!pName) return;
   const lockData = state.userLocks[pName] || {};
-  const updated = { ...lockData, phase2Predictions: { ...(lockData.phase2Predictions||{}), [matchId]: pred } };
-  _writePhase2Field(`userLocks.${pName}`, updated);
+  const updatedPreds = { ...(lockData.phase2Predictions||{}), [matchId]: pred };
+  const updatedLock = { ...lockData, phase2Predictions: updatedPreds };
+  // Update local state immediately
+  if (!state.userLocks[pName]) state.userLocks[pName] = {};
+  state.userLocks[pName].phase2Predictions = updatedPreds;
+  // Persist to Firebase
+  _writePhase2Field(`userLocks.${pName}`, updatedLock);
 }
 
-function savePhase2Draft() {
+function savePhase2Draft(btn) {
   const pName = state.currentUser?.participantName;
   if (!pName) return;
   _collectAndSaveAllPicks(pName, false);
-  // Toast
-  const btn = event.target;
-  const orig = btn.textContent;
-  btn.textContent = '✅ Saved!';
-  setTimeout(() => btn.textContent=orig, 2000);
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => btn.textContent=orig, 2000);
+  }
 }
 
 function submitPhase2() {
@@ -1643,12 +1644,10 @@ function submitPhase2() {
 }
 
 function _collectAndSaveAllPicks(pName, lock) {
-  const sampleParticipant = Object.values(state.participants)[0];
-  const fixtureTemplate = sampleParticipant?.koMatches || [];
   const lockData = state.userLocks[pName] || {};
   const preds = { ...(lockData.phase2Predictions||{}) };
 
-  fixtureTemplate.forEach(m => {
+  WC2026_KO_FIXTURES.forEach(m => {
     const safe = m.id.replace(/[^a-z0-9]/gi,'_');
     const hEl = document.getElementById('p2h_'+safe);
     const aEl = document.getElementById('p2a_'+safe);
@@ -1661,8 +1660,8 @@ function _collectAndSaveAllPicks(pName, lock) {
       myHome: hv!==''?parseInt(hv):'',
       myAway: av!==''?parseInt(av):'',
       penWinner: pensEl?pensEl.value:'',
-      homeTeam: actualKO.homeTeam||m.home||'TBD',
-      awayTeam: actualKO.awayTeam||m.away||'TBD',
+      homeTeam: actualKO.homeTeam || resolveTeamName(m.home),
+      awayTeam: actualKO.awayTeam || resolveTeamName(m.away),
       stage: m.stage
     };
   });
@@ -1717,7 +1716,8 @@ function showAdminTab(id) {
   document.querySelectorAll('.inner-tab').forEach(t=>t.classList.remove('active'));
   event.currentTarget.classList.add('active');
   if (id==='users') refreshUserList();
-  if (id==='phase2') refreshPhase2LockList();
+  if (id==='phase2') { refreshPhase2LockList(); renderAdminPhase2Setup(); }
+  if (id==='knockout') buildAdminMatches();
 }
 
 // ============================================================
@@ -2065,7 +2065,7 @@ function buildAdminMatches() {
         <div class="match-teams"><div class="team-name">${m.home}</div><div class="score-inputs">${fields}</div><div class="team-name away">${m.away}</div></div>
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span class="match-status ${has?'status-played':'status-pending'}" id="st_${m.id}">${has?'✓ Finalized':'Pending'}</span>
-          ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${m.home.replace(/"/g,'&quot;')}" data-away="${m.away.replace(/"/g,'&quot;')}" onclick="saveResult(this.dataset.mid,this.dataset.home,this.dataset.away)">Save</button>`}
+          ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${m.home.replace(/"/g,'&quot;')}" data-away="${m.away.replace(/"/g,'&quot;')}" onclick="saveResult(this.dataset.mid,this.dataset.home,this.dataset.away,this)">Save</button>`}
         </div>
       </div>`;
     });
@@ -2074,35 +2074,110 @@ function buildAdminMatches() {
   document.getElementById('adminGroupMatches').innerHTML=html;
   state._adminBuilt=true;
 
-  let koh=''; const stages={R32:[],R16:[],QF:[],SF:[],Final:[],'3rd':[]};
-  sample.koMatches.forEach(m=>{if(stages[m.stage])stages[m.stage].push(m);});
-  Object.entries(stages).forEach(([stg,matches])=>{
+  let koh='';
+  const koStages = {R32:[],R16:[],QF:[],SF:[],'3rd':[],Final:[]};
+  WC2026_KO_FIXTURES.forEach(m => { if(koStages[m.stage]) koStages[m.stage].push(m); });
+  const koStageOrder = ['R32','R16','QF','SF','3rd','Final'];
+  const koStageLabels = {R32:'Round of 32 (28 Jun – 3 Jul)',R16:'Round of 16 (4–7 Jul)',QF:'Quarter-Finals (9–11 Jul)',SF:'Semi-Finals (14–15 Jul)','3rd':'3rd Place Play-Off (18 Jul)',Final:'⭐ World Cup Final (19 Jul)'};
+  koStageOrder.forEach(stg => {
+    const matches = koStages[stg];
     if(!matches.length) return;
     const rp = ROUND_PTS[stg]||ROUND_PTS['R32'];
-    koh+=`<div class="match-section"><div class="section-header" style="display:flex;justify-content:space-between">${stg}<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)">Correct: ${rp.correct}pt | Exact: ${rp.exact}pt</span></div><div class="match-grid">`;
+    koh+=`<div class="match-section"><div class="section-header" style="display:flex;justify-content:space-between;align-items:center">${koStageLabels[stg]||stg}<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)">Correct: ${rp.correct}pt | Exact: ${rp.exact}pt</span></div><div class="match-grid">`;
     matches.forEach(m=>{
-      const res=state.koActualResults[m.id]||{home:'',away:'',winner:''};
-      const has=res.home!==undefined&&res.home!=='';
-      const safe=m.id.replace(/[^a-z0-9]/gi,'_');
-      const fields=ro?`<div class="score-readonly">${has?res.home:'–'}</div><span class="score-dash">:</span><div class="score-readonly">${has?res.away:'–'}</div>`
-        :`<input type="number" class="score-input" id="kah_${safe}" value="${res.home}" placeholder="0"><span class="score-dash">:</span><input type="number" class="score-input" id="kaa_${safe}" value="${res.away}" placeholder="0">`;
-      koh+=`<div class="match-card">
-        <div class="match-id">${m.id}</div>
-        <div class="match-teams">
-          <div class="team-name" style="font-size:12px">${m.home||'TBD'}</div>
-          <div class="score-inputs">${fields}</div>
-          <div class="team-name away" style="font-size:12px">${m.away||'TBD'}</div>
-        </div>
-        <div style="margin-bottom:10px">
-          <span style="font-size:11px;color:var(--text-muted)">Winner: </span>
-          ${ro?`<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary)">${res.winner||'—'}</span>`
-            :`<input type="text" class="score-input" style="width:140px;font-size:12px" id="kpw_${safe}" value="${res.winner||''}" placeholder="Winner...">`}
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="match-status ${has?'status-played':'status-pending'}" id="kst_${safe}">${has?'✓ Finalized':'Pending'}</span>
-          ${ro?'':`<button class="save-btn" data-mid="${m.id}" data-home="${(m.home||'TBD').replace(/"/g,'&quot;')}" data-away="${(m.away||'TBD').replace(/"/g,'&quot;')}" onclick="saveKOResult(this.dataset.mid,this.dataset.home,this.dataset.away)">Save</button>`}
-        </div>
-      </div>`;
+      const homeTeam = resolveTeamName(m.home);
+      const awayTeam = resolveTeamName(m.away);
+      const res = state.koActualResults[m.id] || {};
+      const has = res.home !== undefined && res.home !== '';
+      const safe = m.id.replace(/[^a-z0-9]/gi,'_');
+      const hVal = has ? res.home : '';
+      const aVal = has ? res.away : '';
+      const decidedBy = res.decidedBy || 'normal'; // normal | et | pens
+      const penW = res.penWinner || '';
+
+      if (ro) {
+        // Read-only display
+        const winnerLabel = res.winner
+          ? `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)">🏆 ${res.winner}</span>${decidedBy==='pens'?' <span style="font-size:10px;color:var(--text-muted)">(Pens)</span>':decidedBy==='et'?' <span style="font-size:10px;color:var(--text-muted)">(AET)</span>':''}`
+          : `<span style="color:var(--text-muted)">—</span>`;
+        koh+=`<div class="match-card">
+          <div class="match-id" style="display:flex;justify-content:space-between">
+            <span>${m.id} · ${stg}</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${m.date} · ${m.venue.split(',')[0]}</span>
+          </div>
+          <div class="match-teams">
+            <div class="team-name" style="font-size:13px;${res.winner===homeTeam?'color:var(--gold)':''}">${homeTeam}</div>
+            <div class="score-inputs">
+              <div class="score-readonly">${has?hVal:'–'}</div><span class="score-dash">:</span><div class="score-readonly">${has?aVal:'–'}</div>
+            </div>
+            <div class="team-name away" style="font-size:13px;${res.winner===awayTeam?'color:var(--gold)':''}">${awayTeam}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+            <span class="match-status ${has?'status-played':'status-pending'}">${has?'✓ Finalized':'Pending'}</span>
+            <div>${winnerLabel}</div>
+          </div>
+        </div>`;
+      } else {
+        // Interactive entry
+        koh+=`<div class="match-card" id="kocard_${safe}" style="border-color:${has?'rgba(56,239,125,0.25)':'var(--border)'}">
+          <div class="match-id" style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:var(--gold);font-weight:700">${m.id}</span>
+            <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${m.date} · ${m.venue.split(',')[0]}</span>
+          </div>
+
+          <!-- Teams + Score -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <div style="flex:1;text-align:left">
+              <div class="team-name" style="font-size:14px" id="koht_${safe}">${homeTeam}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px">Home</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" class="score-input" id="kah_${safe}" value="${hVal}" placeholder="0" min="0" max="20"
+                oninput="koUpdateCard('${safe}','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">
+              <span class="score-dash" style="font-size:20px">:</span>
+              <input type="number" class="score-input" id="kaa_${safe}" value="${aVal}" placeholder="0" min="0" max="20"
+                oninput="koUpdateCard('${safe}','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">
+            </div>
+            <div style="flex:1;text-align:right">
+              <div class="team-name away" style="font-size:14px" id="kaat_${safe}">${awayTeam}</div>
+              <div style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px">Away</div>
+            </div>
+          </div>
+
+          <!-- How was it decided? -->
+          <div id="kodecide_${safe}" style="margin-bottom:10px;display:none">
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">How decided?</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="ko-decide-btn ${decidedBy==='normal'?'ko-decide-active':''}" id="kodb_normal_${safe}"
+                onclick="koSetDecision('${safe}','normal','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">⚽ 90 Min</button>
+              <button class="ko-decide-btn ${decidedBy==='et'?'ko-decide-active':''}" id="kodb_et_${safe}"
+                onclick="koSetDecision('${safe}','et','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">⏱️ Extra Time</button>
+              <button class="ko-decide-btn ${decidedBy==='pens'?'ko-decide-active':''}" id="kodb_pens_${safe}"
+                onclick="koSetDecision('${safe}','pens','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">🎯 Penalties</button>
+            </div>
+          </div>
+
+          <!-- Penalty winner (only when pens selected & scores are equal) -->
+          <div id="kopens_${safe}" style="margin-bottom:10px;display:${decidedBy==='pens'?'block':'none'}">
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Penalty Winner</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="ko-decide-btn ${penW==='H'?'ko-decide-active':''}" id="kopb_H_${safe}"
+                onclick="koSetPenWinner('${safe}','H','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">🏠 ${homeTeam.slice(0,14)}</button>
+              <button class="ko-decide-btn ${penW==='A'?'ko-decide-active':''}" id="kopb_A_${safe}"
+                onclick="koSetPenWinner('${safe}','A','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}')">✈️ ${awayTeam.slice(0,14)}</button>
+            </div>
+          </div>
+
+          <!-- Live result summary badge -->
+          <div id="koresult_${safe}" style="min-height:24px;margin-bottom:10px"></div>
+
+          <!-- Footer -->
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="match-status ${has?'status-played':'status-pending'}" id="kost_${safe}">${has?'✓ Finalized':'Pending'}</span>
+            <button class="btn btn-primary" style="padding:6px 16px;font-size:12px" onclick="saveKOResult('${m.id}','${homeTeam.replace(/'/g,"\\'")}','${awayTeam.replace(/'/g,"\\'")}',this)">💾 Save</button>
+          </div>
+        </div>`;
+      }
     });
     koh+='</div></div>';
   });
@@ -2115,7 +2190,19 @@ function buildAdminMatches() {
       </div>`}
   </div>`;
   document.getElementById('adminKOMatches').innerHTML=koh;
-}
+  // Init all cards that already have results
+  if (!ro) {
+    WC2026_KO_FIXTURES.forEach(m => {
+      const safe = m.id.replace(/[^a-z0-9]/gi,'_');
+      const homeTeam = resolveTeamName(m.home);
+      const awayTeam = resolveTeamName(m.away);
+      const res = state.koActualResults[m.id];
+      if (res && res.home !== undefined && res.home !== '') {
+        koUpdateCard(safe, homeTeam, awayTeam);
+      }
+    });
+  }
+} // end buildAdminMatches
 
 function _patchAdminInputs(sample) {
   sample.groupMatches.forEach(m => {
@@ -2126,7 +2213,7 @@ function _patchAdminInputs(sample) {
     if(aEl&&document.activeElement!==aEl) aEl.value=res.away;
     if(stEl){ stEl.textContent=has?'✓ Finalized':'Pending'; stEl.className='match-status '+(has?'status-played':'status-pending'); }
   });
-  sample.koMatches.forEach(m => {
+  WC2026_KO_FIXTURES.forEach(m => {
     const res=state.koActualResults[m.id]||{home:'',away:'',winner:''};
     const has=res.home!==undefined&&res.home!=='';
     const safe=m.id.replace(/[^a-z0-9]/gi,'_');
@@ -2155,33 +2242,50 @@ function _writeField(dotKey, value) {
 }
 
 function _writePhase2Field(dotKey, value) {
-  const patch = {}; patch[dotKey] = value;
-  return PHASE2_DOC().update(patch).catch(() =>
-    PHASE2_DOC().set({ enabled:state.phase2Enabled, userLocks:state.userLocks })
-      .then(() => PHASE2_DOC().update(patch))
-  );
+  // Build full userLocks object for safe set (avoids Firestore dot-key issues with nested maps)
+  const current = { enabled: state.phase2Enabled, userLocks: { ...state.userLocks } };
+  if (dotKey === 'enabled') {
+    current.enabled = value;
+  } else if (dotKey.startsWith('userLocks.')) {
+    const pName = dotKey.slice('userLocks.'.length);
+    current.userLocks[pName] = value;
+  } else {
+    current[dotKey] = value;
+  }
+  return PHASE2_DOC().set(current, { merge: true });
 }
 
-function saveResult(matchId, homeTeam, awayTeam) {
+function saveResult(matchId, homeTeam, awayTeam, btn) {
   if (!state.isAdmin) return;
-  const hv=document.getElementById('ah_'+matchId).value.trim();
-  const av=document.getElementById('aa_'+matchId).value.trim();
-  if(hv===''||av==='') return;
+  const hEl = document.getElementById('ah_'+matchId);
+  const aEl = document.getElementById('aa_'+matchId);
+  if (!hEl||!aEl) return;
+  const hv=hEl.value.trim(), av=aEl.value.trim();
+  if(hv===''||av==='') { alert('Enter both scores before saving.'); return; }
   const record={home:parseInt(hv),away:parseInt(av),homeTeam,awayTeam};
   state.actualResults[matchId]=record;
-  _writeField(`actualResults.${matchId}`,record).catch(err=>console.error('saveResult failed:',err));
+  if (btn) { btn.textContent='Saving…'; btn.disabled=true; }
+  _writeField(`actualResults.${matchId}`,record)
+    .then(()=>{ if(btn){btn.textContent='✅ Saved';setTimeout(()=>{btn.textContent='Save';btn.disabled=false;},1800);} })
+    .catch(err=>{ console.error('saveResult failed:',err); if(btn){btn.textContent='Save';btn.disabled=false;} alert('Save failed: '+err.message); });
 }
 
-function saveKOResult(matchId, homeTeam, awayTeam) {
+function saveKOResult(matchId, homeTeam, awayTeam, btn) {
   if (!state.isAdmin) return;
   const safe=matchId.replace(/[^a-z0-9]/gi,'_');
-  const hv=document.getElementById('kah_'+safe).value.trim();
-  const av=document.getElementById('kaa_'+safe).value.trim();
-  const win=document.getElementById('kpw_'+safe).value.trim();
-  if(hv===''||av==='') return;
+  const hEl=document.getElementById('kah_'+safe);
+  const aEl=document.getElementById('kaa_'+safe);
+  const wEl=document.getElementById('kpw_'+safe);
+  if(!hEl||!aEl) return;
+  const hv=hEl.value.trim(), av=aEl.value.trim();
+  if(hv===''||av==='') { alert('Enter both scores before saving.'); return; }
+  const win=wEl?wEl.value.trim():'';
   const record={home:parseInt(hv),away:parseInt(av),winner:win,homeTeam,awayTeam};
   state.koActualResults[matchId]=record;
-  _writeField(`koActualResults.${matchId}`,record).catch(err=>console.error('saveKOResult failed:',err));
+  if(btn){btn.textContent='Saving…';btn.disabled=true;}
+  _writeField(`koActualResults.${matchId}`,record)
+    .then(()=>{ if(btn){btn.textContent='✅ Saved';setTimeout(()=>{btn.textContent='Save';btn.disabled=false;},1800);} })
+    .catch(err=>{ console.error('saveKOResult failed:',err); if(btn){btn.textContent='Save';btn.disabled=false;} alert('Save failed: '+err.message); });
 }
 
 function saveChampion() {
@@ -2190,6 +2294,65 @@ function saveChampion() {
   state.actualChampion=v||null;
   _writeField('actualChampion',state.actualChampion).catch(err=>console.error('saveChampion failed:',err));
   launchConfetti(3500);
+}
+
+// ============================================================
+// WC2026 HARDCODED KNOCKOUT FIXTURES (from official bracket xlsx)
+// ============================================================
+const WC2026_KO_FIXTURES = [
+  // ROUND OF 32
+  {id:'M73',stage:'R32',num:1,  date:'28 Jun',venue:'SoFi Stadium, Los Angeles',      home:'South Africa',  away:'Canada'},
+  {id:'M74',stage:'R32',num:2,  date:'29 Jun',venue:'Gillette Stadium, Boston',        home:'Germany',       away:'Paraguay'},
+  {id:'M75',stage:'R32',num:3,  date:'29 Jun',venue:'NRG Stadium, Houston',            home:'Brazil',        away:'Japan'},
+  {id:'M76',stage:'R32',num:4,  date:'29 Jun',venue:'Estadio BBVA, Monterrey',         home:'Netherlands',   away:'Morocco'},
+  {id:'M77',stage:'R32',num:5,  date:'30 Jun',venue:'MetLife Stadium, New York/NJ',    home:'France',        away:'Sweden'},
+  {id:'M78',stage:'R32',num:6,  date:'30 Jun',venue:'AT&T Stadium, Dallas',            home:'Ivory Coast',   away:'Norway'},
+  {id:'M79',stage:'R32',num:7,  date:'30 Jun',venue:'Estadio Azteca, Mexico City',     home:'Mexico',        away:'Ecuador'},
+  {id:'M80',stage:'R32',num:8,  date:'1 Jul', venue:'Mercedes-Benz Stadium, Atlanta',  home:'England',       away:'DR Congo'},
+  {id:'M81',stage:'R32',num:9,  date:'1 Jul', venue:"Levi's Stadium, San Francisco",   home:'USA',           away:'Bosnia & Herzegovina'},
+  {id:'M82',stage:'R32',num:10, date:'1 Jul', venue:'Lumen Field, Seattle',            home:'Belgium',       away:'Senegal'},
+  {id:'M83',stage:'R32',num:11, date:'2 Jul', venue:'BMO Field, Toronto',              home:'Portugal',      away:'Croatia'},
+  {id:'M84',stage:'R32',num:12, date:'2 Jul', venue:'SoFi Stadium, Los Angeles',       home:'Spain',         away:'Austria'},
+  {id:'M85',stage:'R32',num:13, date:'2 Jul', venue:'BC Place, Vancouver',             home:'Switzerland',   away:'Algeria'},
+  {id:'M86',stage:'R32',num:14, date:'3 Jul', venue:'Hard Rock Stadium, Miami',        home:'Argentina',     away:'Cape Verde'},
+  {id:'M87',stage:'R32',num:15, date:'3 Jul', venue:'Arrowhead Stadium, Kansas City',  home:'Colombia',      away:'Ghana'},
+  {id:'M88',stage:'R32',num:16, date:'3 Jul', venue:'AT&T Stadium, Dallas',            home:'Australia',     away:'Egypt'},
+  // ROUND OF 16
+  {id:'M89',stage:'R16',num:1,  date:'4 Jul', venue:'NRG Stadium, Houston',                      home:'W(M74)',away:'W(M77)'},
+  {id:'M90',stage:'R16',num:2,  date:'4 Jul', venue:'Lincoln Financial Field, Philadelphia',      home:'W(M73)',away:'W(M76)'},
+  {id:'M91',stage:'R16',num:3,  date:'5 Jul', venue:'MetLife Stadium, New York/NJ',              home:'W(M75)',away:'W(M78)'},
+  {id:'M92',stage:'R16',num:4,  date:'5 Jul', venue:'Estadio Azteca, Mexico City',               home:'W(M79)',away:'W(M80)'},
+  {id:'M93',stage:'R16',num:5,  date:'6 Jul', venue:'AT&T Stadium, Dallas',                      home:'W(M83)',away:'W(M84)'},
+  {id:'M94',stage:'R16',num:6,  date:'6 Jul', venue:'Lumen Field, Seattle',                      home:'W(M81)',away:'W(M82)'},
+  {id:'M95',stage:'R16',num:7,  date:'7 Jul', venue:'Mercedes-Benz Stadium, Atlanta',            home:'W(M86)',away:'W(M88)'},
+  {id:'M96',stage:'R16',num:8,  date:'7 Jul', venue:'BC Place, Vancouver',                       home:'W(M85)',away:'W(M87)'},
+  // QUARTER-FINALS
+  {id:'M97', stage:'QF',num:1, date:'9 Jul',  venue:'Gillette Stadium, Boston',              home:'W(M89)',away:'W(M90)'},
+  {id:'M98', stage:'QF',num:2, date:'10 Jul', venue:'SoFi Stadium, Los Angeles',             home:'W(M93)',away:'W(M94)'},
+  {id:'M99', stage:'QF',num:3, date:'11 Jul', venue:'Hard Rock Stadium, Miami',              home:'W(M91)',away:'W(M92)'},
+  {id:'M100',stage:'QF',num:4, date:'11 Jul', venue:'Arrowhead Stadium, Kansas City',        home:'W(M95)',away:'W(M96)'},
+  // SEMI-FINALS
+  {id:'M101',stage:'SF',num:1, date:'14 Jul', venue:'AT&T Stadium, Dallas',                  home:'W(M97)', away:'W(M98)'},
+  {id:'M102',stage:'SF',num:2, date:'15 Jul', venue:'Mercedes-Benz Stadium, Atlanta',        home:'W(M99)', away:'W(M100)'},
+  // 3RD PLACE
+  {id:'M103',stage:'3rd',num:1,date:'18 Jul', venue:'Hard Rock Stadium, Miami',              home:'L(M101)',away:'L(M102)'},
+  // FINAL
+  {id:'M104',stage:'Final',num:1,date:'19 Jul',venue:'MetLife Stadium, New York/NJ',         home:'W(M101)',away:'W(M102)'},
+];
+
+// Resolve team names for R16+ from actual KO results (winners of R32 matches)
+function resolveTeamName(placeholder) {
+  if (!placeholder || !placeholder.startsWith('W(') && !placeholder.startsWith('L(')) return placeholder;
+  const isWinner = placeholder.startsWith('W(');
+  const mid = placeholder.slice(2, -1);
+  const res = state.koActualResults[mid];
+  if (!res) return placeholder; // still TBD
+  if (isWinner) return res.winner || res.homeTeam || placeholder;
+  // Loser = the team that isn't the winner
+  if (res.winner && res.homeTeam && res.awayTeam) {
+    return res.winner === res.homeTeam ? res.awayTeam : res.homeTeam;
+  }
+  return placeholder;
 }
 
 // ============================================================
