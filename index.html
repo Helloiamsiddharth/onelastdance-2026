@@ -900,12 +900,28 @@ function scoreParticipant(p) {
     const isExact = (mh===ah && ma===aa);
     const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
 
+    // HOUSE RULE (custom addition, not in the original written rulebook):
+    // If the user predicted a draw + correctly named the penalty winner, but the actual
+    // 120-minute score was NOT level (no penalties were even needed), they still earn the
+    // "correct result" point for having called the eventual winner via their pens pick.
+    // This only fires when the standard rules would otherwise give 0 — it never reduces
+    // points and never applies on top of an exact/correct-result award above.
+    const predictedDrawWithPens = (mh === ma) && m.penWinner;
+    const predictedPenWinnerTeam = m.penWinner === 'H' ? (m.predHome || m.home) : (m.predAway || m.away);
+    const actualWinnerTeam = a.winner || (ah > aa ? (a.homeTeam || m.home) : aa > ah ? (a.awayTeam || m.away) : null);
+    const wonViaPensCallHouseRule = !isExact && !isCorrectResult && predictedDrawWithPens &&
+      predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam;
+
     if (isExact) {
       koPts += rp.exact;
       p2ExactCount++; p2ResultCount++;
       exactCount++; resultCount++;
       perfectMatchesCorrect++;
     } else if (isCorrectResult) {
+      koPts += rp.correct;
+      p2ResultCount++; resultCount++;
+      perfectBracket = false;
+    } else if (wonViaPensCallHouseRule) {
       koPts += rp.correct;
       p2ResultCount++; resultCount++;
       perfectBracket = false;
@@ -929,8 +945,12 @@ function scoreParticipant(p) {
         if (predHome && teamsInActualMatch.has(predHome)) koPts += rp.adv;
         if (predAway && teamsInActualMatch.has(predAway)) koPts += rp.adv;
       } else {
-        // R16 & QF: fallback — only award if fixture doesn't match reality
-        const fixtureMatches = (actualHome === predHome && actualAway === predAway);
+        // R16 & QF: fallback — only award if the predicted FIXTURE (both teams, any side) doesn't match reality.
+        // The rulebook says "both teams you predicted actually played each other" — order doesn't matter.
+        const predPair = new Set([predHome, predAway].filter(Boolean));
+        const actualPair = new Set([actualHome, actualAway].filter(Boolean));
+        const fixtureMatches = predPair.size === 2 && actualPair.size === 2 &&
+          [...predPair].every(t => actualPair.has(t));
         if (!fixtureMatches) {
           // Award adv pt for each predicted team that actually qualified to this stage
           const stageQualified = qualifiedByStage[m.stage] || new Set();
@@ -956,8 +976,20 @@ function scoreParticipant(p) {
 }
 
 function getAllScores() {
-  return Object.entries(state.participants).map(([n,p]) => ({ name:n, ...scoreParticipant(p) }))
-    .sort((a,b) => b.total-a.total || b.exactCount-a.exactCount);
+  const scores = Object.entries(state.participants).map(([n,p]) => ({ name:n, ...scoreParticipant(p) }))
+    // Tiebreak on equal points by most exact scores, then alphabetically — gives every
+    // participant a distinct, stable position on the leaderboard.
+    .sort((a,b) => b.total - a.total || b.exactCount - a.exactCount || a.name.localeCompare(b.name));
+
+  // Sequential rank for display (1,2,3,4,5...). We separately mark whether a participant
+  // is tied on raw points with a neighbour, purely so the UI can show a small "tied" hint —
+  // this does NOT change their numbered position.
+  scores.forEach((s, i) => {
+    s.rank = i + 1;
+    s.tiedWithAbove = i > 0 && scores[i-1].total === s.total;
+    s.tiedWithBelow = i < scores.length - 1 && scores[i+1].total === s.total;
+  });
+  return scores;
 }
 
 // ============================================================
@@ -1711,9 +1743,13 @@ function parseP2Excel(rows, filename) {
     const resolvedHome = (adminF && adminF.home && adminF.home !== 'TBD') ? adminF.home : (homeTeam || resolveTeamName(fixture.home));
     const resolvedAway = (adminF && adminF.away && adminF.away !== 'TBD') ? adminF.away : (awayTeam || resolveTeamName(fixture.away));
 
-    // Parse scores — must be whole numbers
-    const mhRaw = hg !== null && hg !== '' ? parseInt(hg) : '';
-    const maRaw = ag !== null && ag !== '' ? parseInt(ag) : '';
+    // Parse scores — must be whole numbers (rulebook rule #3: decimals are invalid, not truncated)
+    const mhNum = hg !== null && hg !== '' ? Number(hg) : '';
+    const maNum = ag !== null && ag !== '' ? Number(ag) : '';
+    if (mhNum !== '' && !Number.isInteger(mhNum)) { errors.push(mid + ': home score must be a whole number'); return; }
+    if (maNum !== '' && !Number.isInteger(maNum)) { errors.push(mid + ': away score must be a whole number'); return; }
+    const mhRaw = mhNum;
+    const maRaw = maNum;
     if (mhRaw === '' && maRaw === '') return; // no prediction entered, skip
 
     if ((mhRaw !== '' && isNaN(mhRaw)) || (maRaw !== '' && isNaN(maRaw))) {
@@ -1736,14 +1772,13 @@ function parseP2Excel(rows, filename) {
     parsedCount++;
 
     // Capture champion from Final row
+    // Rulebook rule #4: "Failure to select a winner defaults to the home team."
     if (stage === 'Final') {
-      // Winner col is c+5 in the sheet — try to read it
-      // We'll derive it from score + pen winner
       if (mhRaw !== '' && maRaw !== '') {
         if (mhRaw > maRaw) champion = resolvedHome;
         else if (maRaw > mhRaw) champion = resolvedAway;
-        else if (penWinner === 'H') champion = resolvedHome;
         else if (penWinner === 'A') champion = resolvedAway;
+        else champion = resolvedHome; // draw with no (or 'H') pens winner selected -> defaults to home
       }
     }
   });
@@ -1955,10 +1990,12 @@ function refreshDashboard() {
   const tm=Object.keys(state.actualResults).filter(k=>state.actualResults[k].home!=='').length;
   document.getElementById('heroSub').textContent=`${names.length} Participants · ${tm} Matches Finalized`;
   const leader=scores[0];
+  const tiedLeaders = leader ? scores.filter(s => s.total === leader.total) : [];
+  const isTied = tiedLeaders.length > 1;
   document.getElementById('winnerBar').innerHTML=leader?`
     <div class="winner-crown-bar">
-      <div class="wc-label">🏆 Current Championship Leader</div>
-      <div class="wc-name">${leader.name}</div>
+      <div class="wc-label">🏆 ${isTied ? `Tied for the Lead (${tiedLeaders.length}-way)` : 'Current Championship Leader'}</div>
+      <div class="wc-name" style="${isTied?'font-size:36px':''}">${isTied ? tiedLeaders.map(t=>t.name).join(' · ') : leader.name}</div>
       <div class="wc-pts">${leader.total} Points · Phase 1: ${leader.phase1Total} · Phase 2: ${leader.koPts}</div>
     </div>`:'';
   document.getElementById('statsRow').innerHTML=`
@@ -1975,10 +2012,10 @@ function refreshDashboard() {
       <div class="podium-name" style="color:var(--gold);font-size:11px;">${p.total} Pts</div>
       <div class="podium-block">${lb[i]}</div>
     </div>`:`<div class="podium-place ${cl[i]}"><div class="podium-avatar" style="opacity:.2">?</div><div class="podium-block">${lb[i]}</div></div>`).join('');
-  document.getElementById('participantsGrid').innerHTML=scores.map((s,i)=>`
+  document.getElementById('participantsGrid').innerHTML=scores.map((s)=>`
     <div class="participant-chip" onclick="showDetail('${s.name}')">
       <div style="display:flex;align-items:center;">
-        <div class="rank-badge ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other'}">${i+1}</div>
+        <div class="rank-badge ${s.rank===1?'rank-1':s.rank===2?'rank-2':s.rank===3?'rank-3':'rank-other'}">${s.rank}</div>
         <div class="name">${s.name}</div>
       </div>
       <div class="pts">${s.total} Pts</div>
@@ -2101,8 +2138,19 @@ function showDetail(name) {
           const ah=parseInt(actual.home), aa=parseInt(actual.away);
           const rp = ROUND_PTS[stage] || ROUND_PTS['R32'];
           let pts = 0;
-          if (mh===ah && ma===aa) { resCls='pred-result-exact'; pts=rp.exact; }
-          else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) { resCls='pred-result-correct'; pts=rp.correct; }
+          const isExactHere = (mh===ah && ma===aa);
+          const isCorrectHere = !isExactHere && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
+          // House rule: predicted draw + correctly called penalty winner scores the result
+          // point even when the actual 120-min score wasn't level (see scoreParticipant).
+          const predictedDrawWithPens = (mh === ma) && pred.penWinner;
+          const predictedPenWinnerTeam = pred.penWinner === 'H' ? homeTeam : awayTeam;
+          const actualWinnerTeam = actual.winner || (ah>aa ? (actual.homeTeam||homeTeam) : aa>ah ? (actual.awayTeam||awayTeam) : null);
+          const wonViaPensHere = !isExactHere && !isCorrectHere && predictedDrawWithPens &&
+            predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam;
+
+          if (isExactHere) { resCls='pred-result-exact'; pts=rp.exact; }
+          else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
+          else if (wonViaPensHere) { resCls='pred-result-correct'; pts=rp.correct; }
           else { resCls='pred-result-wrong'; pts=0; }
           ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
         }
@@ -2131,7 +2179,7 @@ function showDetail(name) {
       <div class="profile-avatar-lg">${name.slice(0,2).toUpperCase()}</div>
       <div>
         <div class="profile-name">${name}</div>
-        <div class="profile-sub">${s.total} pts · Rank #${getAllScores().findIndex(x=>x.name===name)+1} · Phase 1: ${s.phase1Total} · Phase 2: ${s.koPts}</div>
+        <div class="profile-sub">${s.total} pts · Rank #${getAllScores().find(x=>x.name===name)?.rank || '—'} · Phase 1: ${s.phase1Total} · Phase 2: ${s.koPts}</div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
           ${s.exactCount>0?`<span style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);color:var(--gold);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">⚡ ${s.exactCount} Exact</span>`:''}
           ${s.resultCount>0?`<span style="background:rgba(56,239,125,0.1);border:1px solid rgba(56,239,125,0.2);color:var(--accent);font-size:11px;padding:2px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace">✓ ${s.resultCount} Correct</span>`:''}
@@ -2196,15 +2244,16 @@ function refreshLeaderboard() {
   document.getElementById('lbEmpty').style.display='none';
   document.getElementById('lbContent').style.display='block';
   const medal=['🥇','🥈','🥉'];
-  document.getElementById('lbBody').innerHTML=getAllScores().map((s,i)=>{
+  document.getElementById('lbBody').innerHTML=getAllScores().map((s)=>{
     const lockData = state.userLocks[s.name]||{};
     const lockBadge = lockData.locked ? `<span class="lock-status-badge lock-locked" style="font-size:11px">🔒 Submitted</span>` : Object.keys(lockData.phase2Predictions||{}).length>0 ? `<span class="lock-status-badge lock-unlocked" style="font-size:11px">✏️ Draft</span>` : `<span class="lock-status-badge lock-notstarted" style="font-size:11px">—</span>`;
+    const tieMark = (s.tiedWithAbove || s.tiedWithBelow) ? `<span style="color:var(--text-muted);font-size:10px;margin-left:4px" title="Tied with another participant">(T)</span>` : '';
     return `<tr>
-      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-muted)">${medal[i]||i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-muted)">${medal[s.rank-1]||s.rank}</td>
       <td class="pname" style="cursor:pointer;" onclick="showPage('dashboard');setTimeout(()=>showDetail('${s.name}'),200)">${s.name}</td>
       <td class="sub-cell">${s.phase1Total}</td>
       <td class="sub-cell">${s.koPts}</td>
-      <td class="pts-cell">${s.total}</td>
+      <td class="pts-cell">${s.total}${tieMark}</td>
       <td class="sub-cell">${s.exactCount}</td>
       <td class="sub-cell">${s.resultCount}</td>
       <td>${lockBadge}</td>
@@ -2394,10 +2443,9 @@ function _patchAdminInputs(sample) {
     const res=state.koActualResults[m.id]||{home:'',away:'',winner:''};
     const has=res.home!==undefined&&res.home!=='';
     const safe=m.id.replace(/[^a-z0-9]/gi,'_');
-    const hEl=document.getElementById('kah_'+safe), aEl=document.getElementById('kaa_'+safe), wEl=document.getElementById('kpw_'+safe), stEl=document.getElementById('kst_'+safe);
+    const hEl=document.getElementById('kah_'+safe), aEl=document.getElementById('kaa_'+safe), stEl=document.getElementById('kost_'+safe);
     if(hEl&&document.activeElement!==hEl) hEl.value=res.home;
     if(aEl&&document.activeElement!==aEl) aEl.value=res.away;
-    if(wEl&&document.activeElement!==wEl) wEl.value=res.winner||'';
     if(stEl){ stEl.textContent=has?'✓ Finalized':'Pending'; stEl.className='match-status '+(has?'status-played':'status-pending'); }
   });
   const chEl=document.getElementById('championInput');
@@ -2447,17 +2495,106 @@ function saveResult(matchId, homeTeam, awayTeam, btn) {
     .catch(err=>{ console.error('saveResult failed:',err); if(btn){btn.textContent='Save';btn.disabled=false;} alert('Save failed: '+err.message); });
 }
 
+// ============================================================
+// KO ADMIN CARD INTERACTIVITY
+// Tracks in-progress decision state per match before Save is clicked.
+// ============================================================
+const _koCardDraft = {}; // safe-id -> { decidedBy, penWinner }
+
+function _koDraft(safe) {
+  if (!_koCardDraft[safe]) {
+    const existingId = Object.keys(state.koActualResults).find(k => k.replace(/[^a-z0-9]/gi,'_') === safe);
+    const existing = existingId ? state.koActualResults[existingId] : {};
+    _koCardDraft[safe] = { decidedBy: existing.decidedBy || 'normal', penWinner: existing.penWinner || null };
+  }
+  return _koCardDraft[safe];
+}
+
+function koUpdateCard(safe, homeTeam, awayTeam) {
+  const hEl = document.getElementById('kah_'+safe);
+  const aEl = document.getElementById('kaa_'+safe);
+  const decideWrap = document.getElementById('kodecide_'+safe);
+  const pensWrap = document.getElementById('kopens_'+safe);
+  const resultEl = document.getElementById('koresult_'+safe);
+  if (!hEl || !aEl) return;
+  const hv = hEl.value.trim(), av = aEl.value.trim();
+  const draft = _koDraft(safe);
+
+  if (hv === '' || av === '') {
+    if (decideWrap) decideWrap.style.display = 'none';
+    if (pensWrap) pensWrap.style.display = 'none';
+    if (resultEl) resultEl.innerHTML = '';
+    return;
+  }
+
+  const isDrawScore = parseInt(hv) === parseInt(av);
+  // "How decided?" only matters/needs showing when the entered score is level —
+  // a non-level score can only ever be a normal/ET result, never penalties.
+  if (decideWrap) decideWrap.style.display = isDrawScore ? 'block' : 'none';
+  if (!isDrawScore) { draft.decidedBy = 'normal'; draft.penWinner = null; }
+  if (pensWrap) pensWrap.style.display = (isDrawScore && draft.decidedBy === 'pens') ? 'block' : 'none';
+
+  if (resultEl) {
+    let summary = '';
+    if (isDrawScore && draft.decidedBy === 'pens') {
+      summary = draft.penWinner
+        ? `<span style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace">🎯 ${draft.penWinner === 'H' ? homeTeam : awayTeam} win on penalties</span>`
+        : `<span style="font-size:11px;color:var(--red);font-family:'JetBrains Mono',monospace">⚠️ Select penalty winner</span>`;
+    } else if (isDrawScore) {
+      summary = `<span style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">Level score — select how the winner was decided</span>`;
+    }
+    resultEl.innerHTML = summary;
+  }
+}
+
+function koSetDecision(safe, mode, homeTeam, awayTeam) {
+  const draft = _koDraft(safe);
+  draft.decidedBy = mode;
+  if (mode !== 'pens') draft.penWinner = null;
+  ['normal','et','pens'].forEach(m => {
+    const btn = document.getElementById('kodb_'+m+'_'+safe);
+    if (btn) btn.classList.toggle('ko-decide-active', m === mode);
+  });
+  koUpdateCard(safe, homeTeam, awayTeam);
+}
+
+function koSetPenWinner(safe, side, homeTeam, awayTeam) {
+  const draft = _koDraft(safe);
+  draft.penWinner = side;
+  ['H','A'].forEach(s => {
+    const btn = document.getElementById('kopb_'+s+'_'+safe);
+    if (btn) btn.classList.toggle('ko-decide-active', s === side);
+  });
+  koUpdateCard(safe, homeTeam, awayTeam);
+}
+
 function saveKOResult(matchId, homeTeam, awayTeam, btn) {
   if (!state.isAdmin) return;
   const safe=matchId.replace(/[^a-z0-9]/gi,'_');
   const hEl=document.getElementById('kah_'+safe);
   const aEl=document.getElementById('kaa_'+safe);
-  const wEl=document.getElementById('kpw_'+safe);
   if(!hEl||!aEl) return;
   const hv=hEl.value.trim(), av=aEl.value.trim();
   if(hv===''||av==='') { alert('Enter both scores before saving.'); return; }
-  const win=wEl?wEl.value.trim():'';
-  const record={home:parseInt(hv),away:parseInt(av),winner:win,homeTeam,awayTeam};
+
+  const hNum = parseInt(hv), aNum = parseInt(av);
+  const isDrawScore = hNum === aNum;
+  const draft = _koDraft(safe);
+  const decidedBy = isDrawScore ? draft.decidedBy : 'normal';
+  const penWinner = (isDrawScore && decidedBy === 'pens') ? draft.penWinner : null;
+
+  if (isDrawScore && decidedBy === 'pens' && !penWinner) {
+    alert('Select who won on penalties before saving a level score decided by pens.');
+    return;
+  }
+
+  // Winner = actual advancing team (used for bracket progression / advancement points)
+  let winner;
+  if (hNum > aNum) winner = homeTeam;
+  else if (aNum > hNum) winner = awayTeam;
+  else winner = penWinner === 'A' ? awayTeam : homeTeam; // rule #4: defaults to home if unset
+
+  const record={home:hNum,away:aNum,winner,decidedBy,penWinner,homeTeam,awayTeam};
   state.koActualResults[matchId]=record;
   if(btn){btn.textContent='Saving…';btn.disabled=true;}
   _writeField(`koActualResults.${matchId}`,record)
