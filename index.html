@@ -1073,7 +1073,8 @@ function userLogout() {
 function updateNavForUser() {
   const mt = document.getElementById('myPicksTab');
   if (state.currentUser) {
-    const pName = state.currentUser.participantName;
+    const pName = resolveParticipantName(state.currentUser.participantName);
+    state.currentUser.participantName = pName;
     const lockData = state.userLocks[pName] || {};
     // Always show My Picks tab when logged in — locked users can still view their submissions
     mt.style.display = 'flex';
@@ -1405,11 +1406,47 @@ function viewUserPicks(name) {
 }
 
 // ============================================================
+// Resolve a stored participantName to the actual key in state.participants
+// Tries: exact → case-insensitive → trimmed case-insensitive
+// Also updates state.currentUser.participantName on first successful fuzzy match
+// so all subsequent lookups are exact.
+// ============================================================
+function resolveParticipantName(rawName) {
+  if (!rawName) return rawName;
+  // 1. Exact match
+  if (state.participants[rawName] !== undefined) return rawName;
+  // 2. Case-insensitive + trim match
+  const lower = rawName.trim().toLowerCase();
+  const keys = Object.keys(state.participants);
+  const match = keys.find(k => k.trim().toLowerCase() === lower);
+  if (match) {
+    // Patch the stored name so future lookups are exact
+    if (state.currentUser && state.currentUser.participantName === rawName) {
+      state.currentUser.participantName = match;
+    }
+    return match;
+  }
+  // 3. Partial match — stored name is contained in key or vice versa
+  const partial = keys.find(k => {
+    const kl = k.trim().toLowerCase();
+    return kl.includes(lower) || lower.includes(kl);
+  });
+  if (partial) {
+    if (state.currentUser && state.currentUser.participantName === rawName) {
+      state.currentUser.participantName = partial;
+    }
+    return partial;
+  }
+  return rawName; // return original; caller will handle missing data
+}
+
+// ============================================================
 // MY PICKS — Phase 2 user prediction entry
 // ============================================================
 function refreshMyPicks() {
   if (!state.currentUser) return;
-  const pName = state.currentUser.participantName;
+  const pName = resolveParticipantName(state.currentUser.participantName);
+  state.currentUser.participantName = pName; // keep in sync
   const p = state.participants[pName];
   const lockData = state.userLocks[pName] || {};
   const isLocked = lockData.locked === true;
@@ -1685,8 +1722,9 @@ function handleP2Upload(file) {
 }
 
 function parseP2Excel(rows, filename) {
-  const pName = state.currentUser?.participantName;
+  const pName = resolveParticipantName(state.currentUser?.participantName);
   if (!pName) return;
+  if (state.currentUser) state.currentUser.participantName = pName;
   const lockData = state.userLocks[pName] || {};
   const preds = { ...(lockData.phase2Predictions || {}) };
 
@@ -1820,8 +1858,9 @@ function parseP2Excel(rows, filename) {
 }
 
 function saveP2ChampionDraft(btn) {
-  const pName = state.currentUser?.participantName;
+  const pName = resolveParticipantName(state.currentUser?.participantName);
   if (!pName) return;
+  if (state.currentUser) state.currentUser.participantName = pName;
   const champEl = document.getElementById('p2champion');
   if (!champEl || !champEl.value.trim()) return;
   const lockData = state.userLocks[pName] || {};
@@ -1835,8 +1874,9 @@ function saveP2ChampionDraft(btn) {
 }
 
 function submitPhase2() {
-  const pName = state.currentUser?.participantName;
+  const pName = resolveParticipantName(state.currentUser?.participantName);
   if (!pName) return;
+  if (state.currentUser) state.currentUser.participantName = pName;
   const lockData = state.userLocks[pName] || {};
   const preds = lockData.phase2Predictions || {};
   const matchCount = Object.keys(preds).filter(k=>k!=='champion').length;
