@@ -2044,44 +2044,81 @@ function showDetail(name) {
     });
   }
 
-  // KO picks — show in-app Phase 2 picks or xlsx picks
+  // KO picks — built from WC2026_KO_FIXTURES + phase2Predictions stored at upload time
   const lockData = state.userLocks[name] || {};
   const p2Preds = lockData.phase2Predictions || {};
   const isP2Locked = lockData.locked === true;
+  const hasSomePreds = Object.keys(p2Preds).filter(k => k !== 'champion').length > 0;
 
   let koPicksHtml = '';
-  const sampleParticipant = Object.values(state.participants)[0];
-  const fixtureTemplate = sampleParticipant?.koMatches || [];
 
-  if (fixtureTemplate.length) {
-    koPicksHtml = `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">`;
-    koPicksHtml += isP2Locked ? `<span class="lock-status-badge lock-locked">🔒 Phase 2 Submitted</span>` : Object.keys(p2Preds).length > 0 ? `<span class="lock-status-badge lock-unlocked">✏️ In Progress</span>` : `<span class="lock-status-badge lock-notstarted">— Not submitted</span>`;
-    koPicksHtml += `</div><div class="ko-picks-grid">`;
+  // Status badge
+  const statusBadge = isP2Locked
+    ? `<span class="lock-status-badge lock-locked">🔒 Phase 2 Submitted</span>`
+    : hasSomePreds
+      ? `<span class="lock-status-badge lock-unlocked">✏️ In Progress</span>`
+      : `<span class="lock-status-badge lock-notstarted">— Not submitted</span>`;
 
-    fixtureTemplate.forEach(m => {
-      const pred = p2Preds[m.id] || { myHome: m.myHome, myAway: m.myAway };
-      const actual = state.koActualResults[m.id];
-      const hasActual = actual && actual.home !== '' && actual.home !== null;
-      const mh = parseInt(pred.myHome), ma = parseInt(pred.myAway);
-      const hasPred = !isNaN(mh) && !isNaN(ma);
-      let resCls = 'ko-pick-result-pending';
-      if (hasActual && hasPred) {
-        const ah=parseInt(actual.home), aa=parseInt(actual.away);
-        if (mh===ah&&ma===aa) resCls='pred-result-exact';
-        else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) resCls='pred-result-correct';
-        else resCls='pred-result-wrong';
-      }
-      const rp = ROUND_PTS[m.stage]||ROUND_PTS['R32'];
-      koPicksHtml += `<div class="ko-pick-item">
-        <div class="ko-pick-stage">${m.stage}</div>
-        <div class="ko-pick-teams" style="font-size:13px;font-weight:600;margin-bottom:6px">${m.home||'TBD'} vs ${m.away||'TBD'}</div>
-        <div class="ko-pick-prediction ${resCls}">${hasPred?`${mh} – ${ma}`:'—'}</div>
-        ${hasActual?`<div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace">Actual: ${actual.home} – ${actual.away}</div>`:''}
-      </div>`;
-    });
-    koPicksHtml += '</div>';
+  const champPredName = p2Preds['champion']?.team || state.participants[name]?.predictedChampion || null;
+  const champBadge = champPredName
+    ? `<span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);padding:3px 10px;border-radius:20px">🏆 ${champPredName}</span>`
+    : '';
+
+  koPicksHtml += `<div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${statusBadge}${champBadge}</div>`;
+
+  if (!hasSomePreds) {
+    koPicksHtml += '<p style="color:var(--text-muted);font-size:13px;">No Phase 2 predictions uploaded yet.</p>';
   } else {
-    koPicksHtml = '<p style="color:var(--text-muted);font-size:13px;">No knockout fixtures defined yet.</p>';
+    // Group by stage using WC2026_KO_FIXTURES as the authoritative structure
+    const stageOrder = ['R32','R16','QF','SF','Final','3rd'];
+    const stageLabels = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
+
+    stageOrder.forEach(stage => {
+      const matchesInStage = WC2026_KO_FIXTURES.filter(f => f.stage === stage);
+      // Only show this stage if user has predictions for at least one match
+      const stageEntries = matchesInStage.filter(f => p2Preds[f.id]);
+      if (!stageEntries.length) return;
+
+      koPicksHtml += `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px">${stageLabels[stage]}</div>`;
+      koPicksHtml += `<div class="ko-picks-grid">`;
+
+      stageEntries.forEach(fixture => {
+        const pred = p2Preds[fixture.id];
+        if (!pred) return;
+
+        // Use team names saved with the prediction (from when user uploaded xlsx)
+        const homeTeam = pred.homeTeam || fixture.home;
+        const awayTeam = pred.awayTeam || fixture.away;
+
+        const actual = state.koActualResults[fixture.id];
+        const hasActual = actual && actual.home !== '' && actual.home !== null;
+        const mh = parseInt(pred.myHome), ma = parseInt(pred.myAway);
+        const hasPred = !isNaN(mh) && !isNaN(ma);
+
+        let resCls = '';
+        let ptsBadge = '';
+        if (hasActual && hasPred) {
+          const ah=parseInt(actual.home), aa=parseInt(actual.away);
+          const rp = ROUND_PTS[stage] || ROUND_PTS['R32'];
+          let pts = 0;
+          if (mh===ah && ma===aa) { resCls='pred-result-exact'; pts=rp.exact; }
+          else if ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma)) { resCls='pred-result-correct'; pts=rp.correct; }
+          else { resCls='pred-result-wrong'; pts=0; }
+          ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
+        }
+
+        const penStr = pred.penWinner ? ` <span style="color:var(--text-muted);font-size:10px">(Pens: ${pred.penWinner})</span>` : '';
+
+        koPicksHtml += `<div class="ko-pick-item">
+          <div class="ko-pick-stage">${fixture.id} · ${stage}</div>
+          <div class="ko-pick-teams">${homeTeam} vs ${awayTeam}</div>
+          <div class="ko-pick-prediction ${resCls}">${hasPred ? `${mh} – ${ma}` : '—'}${penStr}</div>
+          ${hasActual ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace">Actual: ${actual.home}–${actual.away} ${ptsBadge}</div>` : ''}
+        </div>`;
+      });
+
+      koPicksHtml += '</div>';
+    });
   }
 
   const ringPct = Math.min(100, Math.round((s.total / 259) * 100));
