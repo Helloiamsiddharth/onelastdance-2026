@@ -837,23 +837,50 @@ function scoreParticipant(p) {
   const lockData = state.userLocks[p.name] || {};
   const p2Preds = lockData.phase2Predictions || {};
 
-  // Build ko match map from hardcoded fixtures + override with in-app predictions
+  // Build ko match map: start from hardcoded WC2026_KO_FIXTURES structure,
+  // then overlay actual team names from admin-saved phase2Brackets for R32,
+  // then overlay user's in-app predictions.
   const koMatchMap = {};
   WC2026_KO_FIXTURES.forEach(m => { koMatchMap[m.id] = { ...m, source:'fixture' }; });
+
+  // Override R32 home/away with admin-defined fixtures (actual team names)
+  (state.phase2Brackets || []).forEach(f => {
+    if (f.stage === 'R32' && koMatchMap[f.id]) {
+      if (f.home && f.home !== 'TBD') koMatchMap[f.id].home = f.home;
+      if (f.away && f.away !== 'TBD') koMatchMap[f.id].away = f.away;
+    }
+  });
+
+  // Overlay user predictions (scores + pen winner + teams they predicted)
   Object.keys(p2Preds).forEach(mid => {
     if (mid === 'champion') return;
     const pred = p2Preds[mid];
     if (koMatchMap[mid]) {
-      koMatchMap[mid] = { ...koMatchMap[mid], myHome: pred.myHome, myAway: pred.myAway, penWinner: pred.penWinner||null, source:'inapp' };
+      // Use the resolved homeTeam/awayTeam saved with the prediction if available
+      koMatchMap[mid] = {
+        ...koMatchMap[mid],
+        myHome: pred.myHome,
+        myAway: pred.myAway,
+        penWinner: pred.penWinner || null,
+        // Predicted team names (what the user saw when they filled the form)
+        predHome: pred.homeTeam || koMatchMap[mid].home,
+        predAway: pred.awayTeam || koMatchMap[mid].away,
+        source: 'inapp'
+      };
     }
   });
 
-  // Determine actual knockout teams from results
-  const qualifiedTeams = new Set();
+  // Build per-stage sets of teams that actually qualified (from actual KO results)
+  // This lets us correctly evaluate fallback advancement for R16 and QF
+  const qualifiedByStage = { R16: new Set(), QF: new Set(), SF: new Set(), Final: new Set() };
   Object.keys(state.koActualResults).forEach(mid => {
     const a = state.koActualResults[mid];
-    if (a && a.homeTeam) qualifiedTeams.add(a.homeTeam);
-    if (a && a.awayTeam) qualifiedTeams.add(a.awayTeam);
+    if (!a || !a.winner) return;
+    // The winner of a R32 match qualified for R16; winner of R16 for QF, etc.
+    const fixtureEntry = WC2026_KO_FIXTURES.find(f => f.id === mid);
+    if (!fixtureEntry) return;
+    const nextStage = { R32:'R16', R16:'QF', QF:'SF', SF:'Final' }[fixtureEntry.stage];
+    if (nextStage && qualifiedByStage[nextStage]) qualifiedByStage[nextStage].add(a.winner);
   });
 
   let perfectBracket = true;
@@ -869,7 +896,6 @@ function scoreParticipant(p) {
     if (isNaN(mh)||isNaN(ma)) { perfectBracket=false; return; }
 
     perfectMatchesNeeded++;
-    const stageKey = m.stage ? m.stage.toUpperCase() : '';
     const rp = ROUND_PTS[m.stage] || ROUND_PTS['R32'];
     const isExact = (mh===ah && ma===aa);
     const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
@@ -889,18 +915,28 @@ function scoreParticipant(p) {
 
     // Advancement points
     if (rp.adv && rp.adv > 0) {
-      const fixtureMatches = (a.homeTeam===m.home && a.awayTeam===m.away);
+      // The teams the user predicted to be in this match
+      const predHome = m.predHome || m.home;
+      const predAway = m.predAway || m.away;
+      // The teams that actually played
+      const actualHome = a.homeTeam || '';
+      const actualAway = a.awayTeam || '';
+
       if (rp.advAlways) {
-        // SF & Final: always award adv pts for each correct team in the match
-        if (a.homeTeam===m.home) koPts += rp.adv;
-        if (a.awayTeam===m.away) koPts += rp.adv;
-        // If predicted opponents but they both made it differently
-        if (a.homeTeam===m.away) koPts += rp.adv;
-        if (a.awayTeam===m.home) koPts += rp.adv;
-      } else if (!fixtureMatches) {
-        // Fallback: only if fixture doesn't match
-        if (qualifiedTeams.has(m.home)) koPts += rp.adv;
-        if (qualifiedTeams.has(m.away)) koPts += rp.adv;
+        // SF & Final: always award adv pts for each team correctly predicted to reach this match
+        // (regardless of which slot home/away they ended up in)
+        const teamsInActualMatch = new Set([actualHome, actualAway].filter(Boolean));
+        if (predHome && teamsInActualMatch.has(predHome)) koPts += rp.adv;
+        if (predAway && teamsInActualMatch.has(predAway)) koPts += rp.adv;
+      } else {
+        // R16 & QF: fallback — only award if fixture doesn't match reality
+        const fixtureMatches = (actualHome === predHome && actualAway === predAway);
+        if (!fixtureMatches) {
+          // Award adv pt for each predicted team that actually qualified to this stage
+          const stageQualified = qualifiedByStage[m.stage] || new Set();
+          if (predHome && stageQualified.has(predHome)) koPts += rp.adv;
+          if (predAway && stageQualified.has(predAway)) koPts += rp.adv;
+        }
       }
     }
   });
@@ -1007,9 +1043,8 @@ function updateNavForUser() {
   if (state.currentUser) {
     const pName = state.currentUser.participantName;
     const lockData = state.userLocks[pName] || {};
-    const isLocked = lockData.locked === true;
-    // Hide tab only after predictions are locked & submitted
-    mt.style.display = isLocked ? 'none' : 'flex';
+    // Always show My Picks tab when logged in — locked users can still view their submissions
+    mt.style.display = 'flex';
   } else {
     mt.style.display = 'none';
   }
@@ -1420,18 +1455,10 @@ function refreshMyPicks() {
   }
 
   // ── PHASE 2 VIEW (when Phase 2 is open) ───────────────────────────────────
-  // Always use the hardcoded WC2026_KO_FIXTURES — no dependency on xlsx data
-  const fixtureTemplate = WC2026_KO_FIXTURES;
-
-  // Get actual KO results to show completed teams
-  const actualKO = state.koActualResults;
-
-  let html = '';
-
-  // Phase 1 summary bar
   const s1 = scoreParticipant(p);
   const played1 = p.groupMatches ? p.groupMatches.filter(m => { const a=state.actualResults[m.id]; return a&&a.home!==''&&a.home!==null&&a.home!==undefined; }).length : 0;
-  html += `<div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(13,21,39,0.95),rgba(0,100,80,0.15));border-color:rgba(56,239,125,0.2)">
+
+  let html = `<div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(13,21,39,0.95),rgba(0,100,80,0.15));border-color:rgba(56,239,125,0.2)">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
       <div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px">✅ Phase 1 Complete — Group Stage</div>
@@ -1446,234 +1473,355 @@ function refreshMyPicks() {
   </div>`;
 
   if (isLocked) {
+    // ── LOCKED: show submitted predictions read-only ──
+    const matchCount = Object.keys(p2Preds).filter(k => k !== 'champion').length;
+    const champPred = p2Preds['champion']?.team || p.predictedChampion || '—';
     html += `<div class="phase2-locked-banner">
       <div class="lock-icon">🔒</div>
       <h3>Predictions Submitted & Locked</h3>
-      <p>Your Phase 2 predictions have been locked in. Only the admin can reopen them if needed.</p>
+      <p>${matchCount} match predictions saved · Champion pick: <strong style="color:var(--gold)">${champPred}</strong></p>
+      <p style="margin-top:6px;font-size:13px;color:var(--text-muted)">Only the admin can reopen your predictions if needed.</p>
     </div>`;
+
+    // Show a summary table of what they submitted
+    if (matchCount > 0) {
+      const stageLabels = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
+      const stagePts = { R32: ROUND_PTS.R32, R16: ROUND_PTS.R16, QF: ROUND_PTS.QF, SF: ROUND_PTS.SF, Final: ROUND_PTS.Final, '3rd': ROUND_PTS['3rd'] };
+      const byStage = {};
+      Object.entries(p2Preds).forEach(([mid, pred]) => {
+        if (mid === 'champion') return;
+        const stage = pred.stage || (WC2026_KO_FIXTURES.find(f=>f.id===mid)||{}).stage || 'R32';
+        if (!byStage[stage]) byStage[stage] = [];
+        byStage[stage].push({ mid, pred, stage });
+      });
+
+      html += `<div class="card" style="margin-top:16px">
+        <div class="card-title">📋 Your Phase 2 Submissions</div>`;
+
+      ['R32','R16','QF','SF','Final','3rd'].forEach(stage => {
+        const entries = byStage[stage];
+        if (!entries || !entries.length) return;
+        html += `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px">${stageLabels[stage]||stage}</div>
+          <div class="match-grid">`;
+        entries.forEach(({ mid, pred }) => {
+          const rp = stagePts[stage] || ROUND_PTS.R32;
+          const actual = state.koActualResults[mid];
+          const hasActual = actual && actual.home !== null && actual.home !== '';
+          let ptsBadge = '';
+          if (hasActual && pred.myHome !== '' && pred.myAway !== '') {
+            const ah=parseInt(actual.home),aa=parseInt(actual.away),ph=parseInt(pred.myHome),pa=parseInt(pred.myAway);
+            let pts = 0;
+            if (ph===ah&&pa===aa) pts=rp.exact;
+            else if ((ah>aa&&ph>pa)||(ah<aa&&ph<pa)||(ah===aa&&ph===pa)) pts=rp.correct;
+            ptsBadge = `<span style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
+          }
+          const ht = pred.homeTeam || mid;
+          const at = pred.awayTeam || '';
+          const score = (pred.myHome!==''&&pred.myAway!=='')?`${pred.myHome} – ${pred.myAway}`:'—';
+          const pens = pred.penWinner ? ` · Pens: ${pred.penWinner}` : '';
+          html += `<div class="ko-entry-card">
+            <div class="match-id">${mid} · ${stage}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+              <span style="font-weight:700;font-size:13px">${ht}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">${score}</span>
+              <span style="font-weight:700;font-size:13px;text-align:right">${at}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${pens} ${hasActual?`Actual: ${actual.home}–${actual.away} ${ptsBadge}`:''}</div>
+          </div>`;
+        });
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+
     el.innerHTML = html;
     return;
-  } else {
-    html += `<div class="alert alert-gold">✏️ <strong>Phase 2 Open:</strong> Enter your knockout stage predictions below. Once you submit, they'll be locked. You can save progress and come back before submitting.</div>`;
   }
 
-  // Champion prediction
+  // ── UNLOCKED: show Excel upload UI ────────────────────────────────────────
+  const hasPreds = Object.keys(p2Preds).filter(k=>k!=='champion').length > 0;
   const champPred = p2Preds['champion']?.team || p.predictedChampion || '';
-  html += `<div class="card" style="margin-bottom:24px">
-    <div class="card-title">🏆 Champion Prediction <span style="font-size:13px;color:var(--gold);font-family:'JetBrains Mono',monospace">+10 pts</span></div>
-    ${isLocked
-      ? `<div style="font-family:'Bebas Neue',cursive;font-size:36px;color:var(--gold)">${champPred||'—'}</div>`
-      : `<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <input type="text" class="score-input" id="p2champion" style="width:220px;text-align:left;padding-left:12px;font-size:14px" value="${champPred}" placeholder="Team name...">
-          <span style="font-size:12px;color:var(--text-muted)">Who wins the whole tournament?</span>
-        </div>`}
+
+  html += `<div class="alert alert-gold">📤 <strong>Phase 2 Open:</strong> Fill in your knockout bracket Excel sheet and upload it below. Once you submit, your predictions will be locked.</div>`;
+
+  // Upload card
+  html += `<div class="card" style="margin-bottom:20px">
+    <div class="card-title">📂 Upload Your KO Bracket Excel</div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Fill in your scores in the <strong>WC2026_Knockout_Bracket.xlsx</strong> file (same format as Phase 1), then upload it here.</p>
+    <div class="upload-zone" id="p2UploadZone" style="padding:32px" onclick="document.getElementById('p2FileInput').click()">
+      <div class="upload-icon" style="font-size:36px">📊</div>
+      <p style="font-size:15px;font-weight:700">${hasPreds ? '↻ Re-upload to update predictions' : 'Click or drag your .xlsx file here'}</p>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:4px">WC2026_Knockout_Bracket.xlsx</p>
+    </div>
+    <input type="file" id="p2FileInput" accept=".xlsx" style="display:none" onchange="handleP2Upload(this.files[0])">
+    <div id="p2UploadStatus" style="margin-top:12px"></div>
   </div>`;
 
-  // Group by stage
-  const stages = ['R32','R16','QF','SF','Final','3rd'];
-  const byStage = {};
-  stages.forEach(s => byStage[s] = []);
-  fixtureTemplate.forEach(m => {
-    const s = m.stage || 'R32';
-    if (!byStage[s]) byStage[s] = [];
-    byStage[s].push(m);
-  });
+  // Current predictions summary (if any)
+  if (hasPreds) {
+    html += `<div class="card" style="margin-bottom:20px;border-color:rgba(56,239,125,0.2)">
+      <div class="card-title">✅ Predictions Loaded <span style="font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:400">${Object.keys(p2Preds).filter(k=>k!=='champion').length} matches</span></div>`;
 
-  const stageLabels = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
-  const stagePts = { R32:'Exact: 2pts | Correct: 1pt', R16:'Exact: 3pts | Correct: 1pt | Adv: +1pt', QF:'Exact: 3pts | Correct: 1pt | Adv: +1pt', SF:'Exact: 4pts | Correct: 2pts | Adv: +2pts', Final:'Exact: 5pts | Correct: 2pts | Adv: +4pts', '3rd':'Exact: 3pts | Correct: 1pt' };
-
-  stages.forEach(stage => {
-    const matches = byStage[stage];
-    if (!matches.length) return;
-
-    html += `<div class="match-section">
-      <div class="section-header" style="display:flex;justify-content:space-between;align-items:baseline">
-        ${stageLabels[stage]||stage}
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted)">${stagePts[stage]||''}</span>
-      </div>
-      <div class="match-grid">`;
-
-    matches.forEach(m => {
-      const pred = p2Preds[m.id] || {};
-      const predH = pred.myHome !== undefined && pred.myHome !== '' ? pred.myHome : '';
-      const predA = pred.myAway !== undefined && pred.myAway !== '' ? pred.myAway : '';
-      const predPens = pred.penWinner || '';
-      const actualResult = state.koActualResults[m.id];
-      const hasActual = actualResult && actualResult.home !== '' && actualResult.home !== null;
-
-      // Resolve team names — use actual KO results if available, else resolve from previous round winner, else use fixture name
-      const homeTeam = actualResult?.homeTeam || resolveTeamName(m.home);
-      const awayTeam = actualResult?.awayTeam || resolveTeamName(m.away);
-
-      const isPredDraw = !isNaN(parseInt(predH)) && !isNaN(parseInt(predA)) && parseInt(predH) === parseInt(predA);
-
-      // Result badge if admin has entered result
-      let resultBadge = '';
-      let pts = null;
-      if (hasActual) {
-        const ah=parseInt(actualResult.home), aa=parseInt(actualResult.away), ph=parseInt(predH), pa=parseInt(predA);
-        const rp = ROUND_PTS[stage]||ROUND_PTS['R32'];
-        if (!isNaN(ph)&&!isNaN(pa)) {
-          if (ph===ah&&pa===aa) { pts=rp.exact; }
-          else if ((ah>aa&&ph>pa)||(ah<aa&&ph<pa)||(ah===aa&&ph===pa)) { pts=rp.correct; }
-          else { pts=0; }
-        }
-        resultBadge = `<div style="font-size:12px;margin-top:8px;font-family:'JetBrains Mono',monospace;">
-          <span style="color:var(--text-muted)">Result: </span>
-          <span style="color:var(--text-primary);font-weight:700">${actualResult.home} – ${actualResult.away}</span>
-          ${pts!==null?`<span style="margin-left:8px;padding:2px 8px;border-radius:6px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`:''}
-        </div>`;
-      }
-
-      const safe = m.id.replace(/[^a-z0-9]/gi,'_');
-
-      html += `<div class="ko-entry-card">
-        <div class="match-id" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-          <span>${m.id} · ${stage}</span>
-          <span style="font-size:10px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${m.date} · ${(m.venue||'').split(',')[0]}</span>
-        </div>
-        <div class="ko-entry-teams">
-          <div class="ko-entry-team">
-            <div class="ko-entry-team-name">${homeTeam}</div>
-            <div class="ko-entry-team-sub">Home</div>
-          </div>
-          <div class="ko-vs">vs</div>
-          <div class="ko-entry-team" style="text-align:right">
-            <div class="ko-entry-team-name">${awayTeam}</div>
-            <div class="ko-entry-team-sub">Away</div>
-          </div>
-        </div>
-        <div class="score-inputs" style="justify-content:center">`;
-
-      if (isLocked) {
-        html += `<div class="score-readonly">${predH!==''?predH:'—'}</div><span class="score-dash">:</span><div class="score-readonly">${predA!==''?predA:'—'}</div>`;
-        if (predPens) html += `<span style="font-size:11px;color:var(--text-muted);margin-left:8px;font-family:'JetBrains Mono',monospace">Pens: ${predPens}</span>`;
-      } else {
-        html += `<input type="number" min="0" max="20" class="score-input" id="p2h_${safe}" value="${predH}" placeholder="0" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">
-          <span class="score-dash">:</span>
-          <input type="number" min="0" max="20" class="score-input" id="p2a_${safe}" value="${predA}" placeholder="0" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">`;
-      }
-
-      html += `</div>`;
-
-      // Penalty winner (only show if predicting a draw)
-      if (!isLocked) {
-        html += `<div class="pens-row" id="pensrow_${safe}" style="${isPredDraw?'':'display:none'}">
-          🎯 Penalty winner:
-          <select id="p2pens_${safe}" onchange="autoSavePick('${m.id}','${safe}','${homeTeam}','${awayTeam}','${stage}')">
-            <option value="" ${!predPens?'selected':''}>— Select —</option>
-            <option value="H" ${predPens==='H'?'selected':''}>Home (${homeTeam.slice(0,12)})</option>
-            <option value="A" ${predPens==='A'?'selected':''}>Away (${awayTeam.slice(0,12)})</option>
-          </select>
-        </div>
-        <script>
-          (function(){
-            const hEl = document.getElementById('p2h_${safe}');
-            const aEl = document.getElementById('p2a_${safe}');
-            const row = document.getElementById('pensrow_${safe}');
-            function check() { if(hEl&&aEl&&row) row.style.display = (hEl.value!==''&&aEl.value!==''&&hEl.value===aEl.value)?'':'none'; }
-            if(hEl) hEl.addEventListener('input', check);
-            if(aEl) aEl.addEventListener('input', check);
-          })();
-        <\/script>`;
-      }
-
-      html += resultBadge;
-      html += `</div>`;
+    const stagePtsMap = { R32: ROUND_PTS.R32, R16: ROUND_PTS.R16, QF: ROUND_PTS.QF, SF: ROUND_PTS.SF, Final: ROUND_PTS.Final, '3rd': ROUND_PTS['3rd'] };
+    const stageLabels2 = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
+    const byStage2 = {};
+    Object.entries(p2Preds).forEach(([mid, pred]) => {
+      if (mid === 'champion') return;
+      const stage = pred.stage || (WC2026_KO_FIXTURES.find(f=>f.id===mid)||{}).stage || 'R32';
+      if (!byStage2[stage]) byStage2[stage] = [];
+      byStage2[stage].push({ mid, pred, stage });
     });
 
-    html += `</div></div>`;
-  });
-
-  // Submit / Save buttons
-  if (!isLocked) {
-    html += `<div style="display:flex;gap:12px;margin-top:32px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="submitPhase2()">🔒 Submit & Lock Predictions</button>
-      <button class="save-btn" onclick="savePhase2Draft(this)" style="padding:12px 24px">💾 Save Draft</button>
-    </div>
-    <p style="margin-top:12px;font-size:12px;color:var(--text-muted)">Submitting locks your picks permanently. Save Draft lets you continue later.</p>`;
+    ['R32','R16','QF','SF','Final','3rd'].forEach(stage => {
+      const entries = byStage2[stage];
+      if (!entries || !entries.length) return;
+      html += `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px">${stageLabels2[stage]||stage}</div>
+        <div class="match-grid">`;
+      entries.forEach(({ mid, pred }) => {
+        const ht = pred.homeTeam || mid;
+        const at = pred.awayTeam || '';
+        const score = (pred.myHome!==''&&pred.myHome!==undefined&&pred.myAway!==''&&pred.myAway!==undefined)?`${pred.myHome} – ${pred.myAway}`:'—';
+        const pens = pred.penWinner ? ` · Pens: ${pred.penWinner}` : '';
+        html += `<div class="ko-entry-card">
+          <div class="match-id">${mid} · ${stage}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+            <span style="font-weight:700;font-size:13px">${ht}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--gold)">${score}</span>
+            <span style="font-weight:700;font-size:13px;text-align:right">${at}</span>
+          </div>
+          ${pens?`<div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${pens}</div>`:''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
   }
-
-  el.innerHTML = html;
-}
-
-function autoSavePick(matchId, safe, homeTeam, awayTeam, stage) {
-  const hEl = document.getElementById('p2h_'+safe);
-  const aEl = document.getElementById('p2a_'+safe);
-  const pensEl = document.getElementById('p2pens_'+safe);
-  if (!hEl || !aEl) return;
-  const hv = hEl.value.trim(), av = aEl.value.trim();
-  if (hv===''&&av==='') return;
-  const pred = { myHome: hv!==''?parseInt(hv):'', myAway: av!==''?parseInt(av):'', penWinner: pensEl?pensEl.value:'', homeTeam, awayTeam, stage };
-  const pName = state.currentUser?.participantName;
-  if (!pName) return;
-  const lockData = state.userLocks[pName] || {};
-  const updatedPreds = { ...(lockData.phase2Predictions||{}), [matchId]: pred };
-  const updatedLock = { ...lockData, phase2Predictions: updatedPreds };
-  // Update local state immediately
-  if (!state.userLocks[pName]) state.userLocks[pName] = {};
-  state.userLocks[pName].phase2Predictions = updatedPreds;
-  // Persist to Firebase
-  _writePhase2Field(`userLocks.${pName}`, updatedLock);
-}
-
-function savePhase2Draft(btn) {
-  const pName = state.currentUser?.participantName;
-  if (!pName) return;
-  _collectAndSaveAllPicks(pName, false);
-  if (btn) {
-    const orig = btn.textContent;
-    btn.textContent = '✅ Saved!';
-    setTimeout(() => btn.textContent=orig, 2000);
-  }
-}
-
-function submitPhase2() {
-  if (!confirm('Submit and lock all your Phase 2 predictions? This cannot be undone without contacting the admin.')) return;
-  const pName = state.currentUser?.participantName;
-  if (!pName) return;
-  _collectAndSaveAllPicks(pName, true);
-  launchConfetti(3000);
-  // After locking: redirect to dashboard and hide My Picks tab
-  setTimeout(() => {
-    updateNavForUser();
-    _showPageDirect('dashboard');
-    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelector('.nav-tab').classList.add('active');
-  }, 600);
-}
-
-function _collectAndSaveAllPicks(pName, lock) {
-  const lockData = state.userLocks[pName] || {};
-  const preds = { ...(lockData.phase2Predictions||{}) };
-
-  WC2026_KO_FIXTURES.forEach(m => {
-    const safe = m.id.replace(/[^a-z0-9]/gi,'_');
-    const hEl = document.getElementById('p2h_'+safe);
-    const aEl = document.getElementById('p2a_'+safe);
-    const pensEl = document.getElementById('p2pens_'+safe);
-    if (!hEl||!aEl) return;
-    const hv=hEl.value.trim(), av=aEl.value.trim();
-    if (hv===''&&av==='') return;
-    const actualKO = state.koActualResults[m.id]||{};
-    preds[m.id] = {
-      myHome: hv!==''?parseInt(hv):'',
-      myAway: av!==''?parseInt(av):'',
-      penWinner: pensEl?pensEl.value:'',
-      homeTeam: actualKO.homeTeam || resolveTeamName(m.home),
-      awayTeam: actualKO.awayTeam || resolveTeamName(m.away),
-      stage: m.stage
-    };
-  });
 
   // Champion pick
+  html += `<div class="card" style="margin-bottom:20px">
+    <div class="card-title">🏆 Champion Prediction <span style="font-size:13px;color:var(--gold);font-family:'JetBrains Mono',monospace">+10 pts</span></div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <input type="text" class="score-input" id="p2champion" style="width:220px;text-align:left;padding-left:12px;font-size:14px" value="${champPred}" placeholder="Team name...">
+      <span style="font-size:12px;color:var(--text-muted)">Who wins the whole tournament?</span>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:8px">This is also read from your Excel's Winner column of the Final row — or type it manually above.</p>
+  </div>`;
+
+  // Action buttons
+  html += `<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+    <button class="btn btn-primary" onclick="submitPhase2()" ${hasPreds?'':'disabled style="opacity:0.4;cursor:not-allowed"'}>🔒 Submit & Lock Predictions</button>
+    <button class="save-btn" onclick="saveP2ChampionDraft(this)" style="padding:12px 24px">💾 Save Champion Pick</button>
+  </div>
+  <p style="margin-top:10px;font-size:12px;color:var(--text-muted)">Upload your Excel to load predictions, then hit Submit to lock them in. ${!hasPreds?'You must upload the Excel before submitting.':''}</p>`;
+
+  el.innerHTML = html;
+
+  // Re-attach drag & drop on the upload zone
+  const zone = document.getElementById('p2UploadZone');
+  if (zone) {
+    zone.addEventListener('dragover', e => e.preventDefault());
+    zone.addEventListener('drop', e => { e.preventDefault(); handleP2Upload(e.dataTransfer.files[0]); });
+  }
+}
+
+// ============================================================
+// PHASE 2 — EXCEL UPLOAD HANDLER
+// ============================================================
+function handleP2Upload(file) {
+  if (!file || !file.name.endsWith('.xlsx')) {
+    document.getElementById('p2UploadStatus').innerHTML =
+      '<div class="alert alert-warn" style="margin:0">⚠️ Please select a .xlsx file.</div>';
+    return;
+  }
+  const statusEl = document.getElementById('p2UploadStatus');
+  if (statusEl) statusEl.innerHTML = '<div class="scores-loading"><div class="spinner"></div> Parsing Excel...</div>';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true });
+      // Try to find the KO Bracket sheet
+      const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('ko') || s.toLowerCase().includes('knock') || s.toLowerCase().includes('bracket')) || wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+      parseP2Excel(rows, file.name);
+    } catch(err) {
+      if (statusEl) statusEl.innerHTML = `<div class="alert alert-warn" style="margin:0">❌ Parse error: ${err.message}</div>`;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function parseP2Excel(rows, filename) {
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  const lockData = state.userLocks[pName] || {};
+  const preds = { ...(lockData.phase2Predictions || {}) };
+
+  // Build a lookup of admin-defined R32 teams for name matching
+  const adminBracketMap = {};
+  (state.phase2Brackets || []).forEach(f => { adminBracketMap[f.id] = f; });
+
+  // Find data rows: look for the first row that has an M-number or R32/R16/QF/SF in it
+  // The xlsx format: col 0=row#, col 1=date, col 2=venue, col 3=M#, col 4=HomeTeam, col 5=HG, col 6=AG, col 7=AwayTeam, col 8=Winner, col 9=kickoff, col 10=PensW
+  // We scan for rows where col[3] matches M73–M104 or '3rd/4th' or 'M104'
+  const matchIdRe = new RegExp("^M[0-9]+$|^3rd.4th$|^3rd$", "i");
+  let champion = null;
+  let parsedCount = 0;
+  let errors = [];
+
+  rows.forEach(function(row) {
+    if (!row) return;
+    // Find the column that has a match ID (M73, M74 ... M104)
+    let mid = null, hg = null, ag = null, pw = null, homeTeam = null, awayTeam = null;
+
+    for (let c = 0; c < row.length; c++) {
+      const cell = row[c];
+      if (cell && typeof cell === 'string' && matchIdRe.test(String(cell).trim())) {
+        mid = String(cell).trim();
+        // Based on the bracket xlsx column layout:
+        // col c   = M#
+        // col c+1 = Home Team
+        // col c+2 = HG
+        // col c+3 = AG
+        // col c+4 = Away Team
+        // col c+5 = Winner (auto)
+        // col c+7 = Pens W (H/A)
+        homeTeam = row[c+1] ? String(row[c+1]).trim() : null;
+        hg       = row[c+2];
+        ag       = row[c+3];
+        awayTeam = row[c+4] ? String(row[c+4]).trim() : null;
+        // Winner col = c+5, Pens = c+7 (there's a kickoff col between)
+        pw = row[c+7] ? String(row[c+7]).trim() : (row[c+5] ? String(row[c+5]).trim() : null);
+        // Pens W should be 'H' or 'A' only
+        if (pw && pw !== 'H' && pw !== 'A') pw = null;
+        break;
+      }
+    }
+
+    if (!mid) return;
+
+    // Find the fixture definition for this match
+    const fixture = WC2026_KO_FIXTURES.find(f => f.id === mid);
+    if (!fixture) return; // skip 3rd/4th row lookup variation
+    const stage = fixture.stage;
+
+    // Resolve actual team names: prefer admin-set bracket > excel > placeholder
+    const adminF = adminBracketMap[mid];
+    const resolvedHome = (adminF && adminF.home && adminF.home !== 'TBD') ? adminF.home : (homeTeam || resolveTeamName(fixture.home));
+    const resolvedAway = (adminF && adminF.away && adminF.away !== 'TBD') ? adminF.away : (awayTeam || resolveTeamName(fixture.away));
+
+    // Parse scores — must be whole numbers
+    const mhRaw = hg !== null && hg !== '' ? parseInt(hg) : '';
+    const maRaw = ag !== null && ag !== '' ? parseInt(ag) : '';
+    if (mhRaw === '' && maRaw === '') return; // no prediction entered, skip
+
+    if ((mhRaw !== '' && isNaN(mhRaw)) || (maRaw !== '' && isNaN(maRaw))) {
+      errors.push(mid + ': invalid score');
+      return;
+    }
+
+    // For draws, require a pen winner — if missing, default to null (will be flagged)
+    const isDraw = mhRaw !== '' && maRaw !== '' && mhRaw === maRaw;
+    const penWinner = isDraw ? (pw || null) : null;
+
+    preds[mid] = {
+      myHome: mhRaw,
+      myAway: maRaw,
+      penWinner: penWinner,
+      homeTeam: resolvedHome,
+      awayTeam: resolvedAway,
+      stage: stage
+    };
+    parsedCount++;
+
+    // Capture champion from Final row
+    if (stage === 'Final') {
+      // Winner col is c+5 in the sheet — try to read it
+      // We'll derive it from score + pen winner
+      if (mhRaw !== '' && maRaw !== '') {
+        if (mhRaw > maRaw) champion = resolvedHome;
+        else if (maRaw > mhRaw) champion = resolvedAway;
+        else if (penWinner === 'H') champion = resolvedHome;
+        else if (penWinner === 'A') champion = resolvedAway;
+      }
+    }
+  });
+
+  // Also check for 3rd place (id M103) using same logic above — already covered
+
+  if (parsedCount === 0) {
+    const statusEl = document.getElementById('p2UploadStatus');
+    if (statusEl) statusEl.innerHTML = '<div class="alert alert-warn" style="margin:0">⚠️ No predictions found. Make sure you are uploading the correct KO Bracket Excel with scores filled in (columns HG/AG).</div>';
+    return;
+  }
+
+  // Update champion if we derived one and user hasn't set one manually
   const champEl = document.getElementById('p2champion');
-  if (champEl && champEl.value.trim()) {
+  if (champion) {
+    preds['champion'] = { team: champion };
+    if (champEl) champEl.value = champion;
+  } else if (champEl && champEl.value.trim()) {
     preds['champion'] = { team: champEl.value.trim() };
   }
 
-  const updated = { ...lockData, phase2Predictions: preds, locked: lock };
-  _writePhase2Field(`userLocks.${pName}`, updated);
+  // Save to Firebase
+  const updated = { ...lockData, phase2Predictions: preds };
+  if (!state.userLocks[pName]) state.userLocks[pName] = {};
+  state.userLocks[pName].phase2Predictions = preds;
+  _writePhase2Field(`userLocks.${pName}`, updated)
+    .then(() => {
+      const statusEl = document.getElementById('p2UploadStatus');
+      if (statusEl) {
+        const warn = errors.length ? ` (${errors.length} rows skipped)` : '';
+        statusEl.innerHTML = `<div class="alert alert-success" style="margin:0">✅ ${parsedCount} predictions loaded from <strong>${filename}</strong>${warn}. Review below and submit when ready.</div>`;
+      }
+      refreshMyPicks();
+    })
+    .catch(err => {
+      const statusEl = document.getElementById('p2UploadStatus');
+      if (statusEl) statusEl.innerHTML = `<div class="alert alert-warn" style="margin:0">❌ Save failed: ${err.message}</div>`;
+    });
+}
+
+function saveP2ChampionDraft(btn) {
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  const champEl = document.getElementById('p2champion');
+  if (!champEl || !champEl.value.trim()) return;
+  const lockData = state.userLocks[pName] || {};
+  const preds = { ...(lockData.phase2Predictions||{}), champion: { team: champEl.value.trim() } };
+  const updated = { ...lockData, phase2Predictions: preds };
+  if (!state.userLocks[pName]) state.userLocks[pName] = {};
+  state.userLocks[pName].phase2Predictions = preds;
+  _writePhase2Field(`userLocks.${pName}`, updated).then(() => {
+    if (btn) { const o=btn.textContent; btn.textContent='✅ Saved!'; setTimeout(()=>btn.textContent=o,2000); }
+  });
+}
+
+function submitPhase2() {
+  const pName = state.currentUser?.participantName;
+  if (!pName) return;
+  const lockData = state.userLocks[pName] || {};
+  const preds = lockData.phase2Predictions || {};
+  const matchCount = Object.keys(preds).filter(k=>k!=='champion').length;
+  if (matchCount === 0) { alert('Please upload your KO Bracket Excel first.'); return; }
+  if (!confirm(`Submit and lock ${matchCount} predictions? This cannot be undone without contacting the admin.`)) return;
+
+  // Save champion from input if set
+  const champEl = document.getElementById('p2champion');
+  if (champEl && champEl.value.trim()) preds['champion'] = { team: champEl.value.trim() };
+
+  const updated = { ...lockData, phase2Predictions: preds, locked: true };
+  _writePhase2Field(`userLocks.${pName}`, updated).then(() => {
+    launchConfetti(3000);
+    setTimeout(() => {
+      updateNavForUser();
+      _showPageDirect('dashboard');
+      document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelector('.nav-tab').classList.add('active');
+    }, 600);
+  });
 }
 
 // ============================================================
@@ -1694,15 +1842,7 @@ function showPage(id, tabEl) {
   if (id==='upload' && !state.isAdmin) return;
   if (id==='mypicks') {
     if (!state.currentUser) { openLoginModal('user'); return; }
-    const pName = state.currentUser.participantName;
-    const lockData = state.userLocks[pName] || {};
-    if (lockData.locked === true) {
-      // Locked users cannot access My Picks - bounce to dashboard
-      _showPageDirect('dashboard');
-      document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-      document.querySelector('.nav-tab').classList.add('active');
-      return;
-    }
+    // Locked users CAN still view My Picks — they see their read-only submitted predictions
   }
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   if (tabEl) tabEl.classList.add('active');
@@ -2340,19 +2480,33 @@ const WC2026_KO_FIXTURES = [
   {id:'M104',stage:'Final',num:1,date:'19 Jul',venue:'MetLife Stadium, New York/NJ',         home:'W(M101)',away:'W(M102)'},
 ];
 
-// Resolve team names for R16+ from actual KO results (winners of R32 matches)
+// Resolve team names for R16+ fixtures.
+// Priority: 1) actual KO result (match played) -> 2) admin-saved R32 team names -> 3) placeholder
 function resolveTeamName(placeholder) {
-  if (!placeholder || !placeholder.startsWith('W(') && !placeholder.startsWith('L(')) return placeholder;
+  if (!placeholder) return placeholder;
   const isWinner = placeholder.startsWith('W(');
+  const isLoser  = placeholder.startsWith('L(');
+  if (!isWinner && !isLoser) return placeholder;
   const mid = placeholder.slice(2, -1);
+
+  // 1) Match has been played - use real result
   const res = state.koActualResults[mid];
-  if (!res) return placeholder; // still TBD
-  if (isWinner) return res.winner || res.homeTeam || placeholder;
-  // Loser = the team that isn't the winner
-  if (res.winner && res.homeTeam && res.awayTeam) {
-    return res.winner === res.homeTeam ? res.awayTeam : res.homeTeam;
+  if (res && res.winner) {
+    if (isWinner) return res.winner;
+    if (res.homeTeam && res.awayTeam) {
+      return res.winner === res.homeTeam ? res.awayTeam : res.homeTeam;
+    }
   }
-  return placeholder;
+
+  // 2) Admin has defined R32 fixture teams in phase2Brackets - show who plays
+  if (isWinner) {
+    const bracket = (state.phase2Brackets || []).find(function(f){ return f.id === mid; });
+    if (bracket && bracket.home && bracket.home !== 'TBD' && !bracket.home.startsWith('W(')) {
+      return bracket.home + ' / ' + bracket.away;
+    }
+  }
+
+  return placeholder; // still truly TBD
 }
 
 // ============================================================
