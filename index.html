@@ -410,17 +410,17 @@
         <div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Phase 2 — Knockout</div>
           <table class="pts-table">
-            <tr><th>Round</th><th>Correct / Exact</th></tr>
+            <tr><th>Round</th><th>Correct / Exact (max)</th></tr>
             <tr><td>R32</td><td>1 / 2 pts</td></tr>
-            <tr><td>R16</td><td>1 / 3 pts</td></tr>
-            <tr><td>QF</td><td>1 / 3 pts + 2 adv</td></tr>
-            <tr><td>SF</td><td>2 / 4 pts + 4 adv</td></tr>
-            <tr><td>Final</td><td>2 / 5 pts</td></tr>
+            <tr><td>R16</td><td>1 / 3 pts*</td></tr>
+            <tr><td>QF</td><td>1 / 3 pts*</td></tr>
+            <tr><td>SF</td><td>2 / 4 pts + 2 adv</td></tr>
+            <tr><td>Final</td><td>2 / 5 pts + 4 adv</td></tr>
             <tr><td>3rd Place</td><td>1 / 3 pts</td></tr>
             <tr><td>Champion pick</td><td>+10 pts bonus</td></tr>
             <tr><td>Perfect Bracket</td><td>+5 pts bonus</td></tr>
           </table>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace">Advancement bonus starts from Quarterfinals. No advancement bonus in R32/R16/Final/3rd.</p>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace">*R16/QF: if your predicted matchup doesn't happen, each team you picked still earns +1 pt if it genuinely advanced. SF/Final advancement bonuses always stack on top of match points.</p>
         </div>
       </div>
     </div>
@@ -798,20 +798,29 @@ function renderSchedule(el) {
 }
 
 // ============================================================
-// SCORING ENGINE — matches the official rulebook exactly
+// SCORING ENGINE — Phase 2 rewritten per WC2026_Final_Rulebook_1.pdf
 // ============================================================
-// PHASE 1: correct result = 1pt, exact = 2pts TOTAL (replaces result)
-// PHASE 2 match pts: R32: 1/2, R16: 1/3, QF: 1/3, SF: 2/4, Final: 2/5, 3rd: 1/3
-// PHASE 2 advancement bonus: NONE in R32/R16. QF: +2 always. SF: +4 always. Final: champion bonus +10 (no separate advancement pts).
-// Champion bonus: +10, Perfect bracket: +5
+// PHASE 1: correct result = 1pt, exact = 2pts TOTAL (unchanged)
+// PHASE 2 match pts (Correct Winner + Exact Scoreline, additive):
+//   R32: 1+1=2 | R16: 1+2=3 | QF: 1+2=3 | SF: 2+2=4 | Final: 2+3=5 | 3rd: 1+2=3
+// R16/QF: if predicted pairing happens in reality, score normally (no extra).
+//         If not, evaluate each predicted team independently: +1 pt fallback per team that
+//         genuinely advanced to that round (0 if it didn't).
+// SF: +2 pts per correct team reaching SF (always stacks, regardless of pairing).
+// Final: +4 pts per correct team reaching Final (always stacks).
+// Champion bonus: +10. Perfect bracket (all 32 KO matches exact): +5.
+// Penalties (match drawn after 120 mins):
+//   - predicted draw + exact 120-min score → full round points (correct winner + exact)
+//   - predicted draw (wrong score) + correct pens winner → correct-winner pt only
+//   - predicted an outright (non-draw) winner but match went to penalties → 0 pts total
 
 const ROUND_PTS = {
-  R32:  { correct:1, exact:2 },
-  R16:  { correct:1, exact:3 },
-  QF:   { correct:1, exact:3, adv:2, advAlways:true },
-  SF:   { correct:2, exact:4, adv:4, advAlways:true },
-  Final:{ correct:2, exact:5 },
-  '3rd':{ correct:1, exact:3 },
+  R32:  { correct:1, exact:1 },
+  R16:  { correct:1, exact:2, fallback:1 },
+  QF:   { correct:1, exact:2, fallback:1 },
+  SF:   { correct:2, exact:2, adv:2, advAlways:true },
+  Final:{ correct:2, exact:3, adv:4, advAlways:true },
+  '3rd':{ correct:1, exact:2 },
 };
 
 function scoreParticipant(p) {
@@ -870,6 +879,18 @@ function scoreParticipant(p) {
     }
   });
 
+  // Build per-stage sets of teams that actually qualified (from actual KO results),
+  // needed for the R16/QF fallback rule: 1pt per predicted team that genuinely advanced.
+  const qualifiedByStage = { R16: new Set(), QF: new Set(), SF: new Set(), Final: new Set() };
+  Object.keys(state.koActualResults).forEach(mid => {
+    const a = state.koActualResults[mid];
+    if (!a || !a.winner) return;
+    const fixtureEntry = WC2026_KO_FIXTURES.find(f => f.id === mid);
+    if (!fixtureEntry) return;
+    const nextStage = { R32:'R16', R16:'QF', QF:'SF', SF:'Final' }[fixtureEntry.stage];
+    if (nextStage && qualifiedByStage[nextStage]) qualifiedByStage[nextStage].add(a.winner);
+  });
+
   let perfectBracket = true;
   let perfectMatchesNeeded = 0;
   let perfectMatchesCorrect = 0;
@@ -884,50 +905,76 @@ function scoreParticipant(p) {
 
     perfectMatchesNeeded++;
     const rp = ROUND_PTS[m.stage] || ROUND_PTS['R32'];
+
+    // 120-minute scoreline comparison only — penalty shootout goals never count here.
     const isExact = (mh===ah && ma===aa);
     const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
+    const actualWentToPens = (ah === aa); // 120-min draw = penalties were needed
+    const predictedDraw = (mh === ma);
 
-    // HOUSE RULE (custom addition, not in the original written rulebook):
-    // If the user predicted a draw + correctly named the penalty winner, but the actual
-    // 120-minute score was NOT level (no penalties were even needed), they still earn the
-    // "correct result" point for having called the eventual winner via their pens pick.
-    // This only fires when the standard rules would otherwise give 0 — it never reduces
-    // points and never applies on top of an exact/correct-result award above.
-    const predictedDrawWithPens = (mh === ma) && m.penWinner;
-    const predictedPenWinnerTeam = m.penWinner === 'H' ? (m.predHome || m.home) : (m.predAway || m.away);
+    const predHome = m.predHome || m.home;
+    const predAway = m.predAway || m.away;
+    const predictedPenWinnerTeam = m.penWinner === 'H' ? predHome : m.penWinner === 'A' ? predAway : null;
     const actualWinnerTeam = a.winner || (ah > aa ? (a.homeTeam || m.home) : aa > ah ? (a.awayTeam || m.away) : null);
-    const wonViaPensCallHouseRule = !isExact && !isCorrectResult && predictedDrawWithPens &&
-      predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam;
 
-    if (isExact) {
-      koPts += rp.exact;
-      p2ExactCount++; p2ResultCount++;
-      exactCount++; resultCount++;
-      perfectMatchesCorrect++;
-    } else if (isCorrectResult) {
-      koPts += rp.correct;
-      p2ResultCount++; resultCount++;
-      perfectBracket = false;
-    } else if (wonViaPensCallHouseRule) {
-      koPts += rp.correct;
-      p2ResultCount++; resultCount++;
-      perfectBracket = false;
+    let matchPts = 0;
+
+    if (actualWentToPens) {
+      // --- Match went to penalties in real life ---
+      if (predictedDraw && isExact) {
+        // Draw scoreline + exact 120-min score predicted → full round points
+        matchPts = rp.correct + rp.exact;
+        p2ExactCount++; exactCount++; perfectMatchesCorrect++;
+        p2ResultCount++; resultCount++;
+      } else if (predictedDraw && predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
+        // Draw scoreline predicted (wrong score) but correct pens winner → correct-winner pt only
+        matchPts = rp.correct;
+        p2ResultCount++; resultCount++;
+        perfectBracket = false;
+      } else {
+        // Outright (non-draw) winner predicted, but match actually went to penalties → 0 pts
+        matchPts = 0;
+        perfectBracket = false;
+      }
     } else {
-      perfectBracket = false;
+      // --- Match decided in 120 minutes (no penalties) ---
+      if (isExact) {
+        matchPts = rp.correct + rp.exact;
+        p2ExactCount++; exactCount++; perfectMatchesCorrect++;
+        p2ResultCount++; resultCount++;
+      } else if (isCorrectResult) {
+        matchPts = rp.correct;
+        p2ResultCount++; resultCount++;
+        perfectBracket = false;
+      } else {
+        matchPts = 0;
+        perfectBracket = false;
+      }
     }
 
-    // Advancement points — only QF (+2) and SF (+4) carry advancement bonuses;
-    // RO32, RO16, Final, and 3rd place carry no advancement bonus per the rulebook.
-    if (rp.adv && rp.adv > 0 && rp.advAlways) {
-      // The teams the user predicted to be in this match
-      const predHome = m.predHome || m.home;
-      const predAway = m.predAway || m.away;
-      // The teams that actually played
+    koPts += matchPts;
+
+    // --- R16 / QF fallback rule ---
+    // If the predicted matchup pairing happened in reality, no extra fallback points.
+    // If not, evaluate each predicted team independently: +1 pt per team that genuinely advanced.
+    if (rp.fallback) {
       const actualHome = a.homeTeam || '';
       const actualAway = a.awayTeam || '';
+      const predPair = new Set([predHome, predAway].filter(Boolean));
+      const actualPair = new Set([actualHome, actualAway].filter(Boolean));
+      const pairingMatchesReality = predPair.size === 2 && actualPair.size === 2 &&
+        [...predPair].every(t => actualPair.has(t));
+      if (!pairingMatchesReality) {
+        const stageQualified = qualifiedByStage[m.stage] || new Set();
+        if (predHome && stageQualified.has(predHome)) koPts += rp.fallback;
+        if (predAway && stageQualified.has(predAway)) koPts += rp.fallback;
+      }
+    }
 
-      // Award adv pts for each team correctly predicted to reach this match
-      // (regardless of which slot home/away they ended up in)
+    // --- SF / Final advancement bonus (always stacks on top of match points) ---
+    if (rp.adv && rp.adv > 0 && rp.advAlways) {
+      const actualHome = a.homeTeam || '';
+      const actualAway = a.awayTeam || '';
       const teamsInActualMatch = new Set([actualHome, actualAway].filter(Boolean));
       if (predHome && teamsInActualMatch.has(predHome)) koPts += rp.adv;
       if (predAway && teamsInActualMatch.has(predAway)) koPts += rp.adv;
@@ -950,15 +997,23 @@ function scoreParticipant(p) {
 
 function getAllScores() {
   const scores = Object.entries(state.participants).map(([n,p]) => ({ name:n, ...scoreParticipant(p) }))
-    // Tiebreak on equal points by most exact scores, then alphabetically — gives every
-    // participant a distinct, stable position on the leaderboard.
-    .sort((a,b) => b.total - a.total || b.exactCount - a.exactCount || a.name.localeCompare(b.name));
+    // Sort purely by total points, highest first. Per the rulebook, participants with
+    // identical totals are TIED — no secondary tiebreaker (exact count, alphabetical, etc.)
+    // decides their rank. Name is used only as a stable sort key so ties render in a
+    // consistent order, not to break the tie itself.
+    .sort((a,b) => b.total - a.total || a.name.localeCompare(b.name));
 
-  // Sequential rank for display (1,2,3,4,5...). We separately mark whether a participant
-  // is tied on raw points with a neighbour, purely so the UI can show a small "tied" hint —
-  // this does NOT change their numbered position.
+  // Standard competition ("1224") ranking: participants tied on total points share the
+  // same rank number, and the next distinct score skips ahead accordingly
+  // (e.g. two people tied at rank 2 → next person is rank 4, not 3).
   scores.forEach((s, i) => {
-    s.rank = i + 1;
+    if (i === 0) {
+      s.rank = 1;
+    } else if (scores[i-1].total === s.total) {
+      s.rank = scores[i-1].rank;
+    } else {
+      s.rank = i + 1;
+    }
     s.tiedWithAbove = i > 0 && scores[i-1].total === s.total;
     s.tiedWithBelow = i < scores.length - 1 && scores[i+1].total === s.total;
   });
@@ -1553,7 +1608,7 @@ function refreshMyPicks() {
           if (hasActual && pred.myHome !== '' && pred.myAway !== '') {
             const ah=parseInt(actual.home),aa=parseInt(actual.away),ph=parseInt(pred.myHome),pa=parseInt(pred.myAway);
             let pts = 0;
-            if (ph===ah&&pa===aa) pts=rp.exact;
+            if (ph===ah&&pa===aa) pts=rp.correct+rp.exact;
             else if ((ah>aa&&ph>pa)||(ah<aa&&ph<pa)||(ah===aa&&ph===pa)) pts=rp.correct;
             ptsBadge = `<span style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
           }
@@ -1768,9 +1823,15 @@ function parseP2Excel(rows, filename) {
       return;
     }
 
-    // For draws, require a pen winner — if missing, default to null (will be flagged)
+    // For draws, a pen winner selection is required to remain eligible for full points
+    // (rulebook rule #3). If missing, default the winner to the Home Team (rulebook rule #2)
+    // and flag it so the user knows their pick may not score the result point if wrong.
     const isDraw = mhRaw !== '' && maRaw !== '' && mhRaw === maRaw;
-    const penWinner = isDraw ? (pw || null) : null;
+    let penWinner = isDraw ? (pw || null) : null;
+    if (isDraw && !penWinner) {
+      penWinner = 'H'; // rule #2: defaults to Home Team when unspecified
+      errors.push(mid + ': draw predicted with no penalty winner selected — defaulted to Home Team. Result point at risk if Home does not actually win.');
+    }
 
     preds[mid] = {
       myHome: mhRaw,
@@ -1819,8 +1880,8 @@ function parseP2Excel(rows, filename) {
     .then(() => {
       const statusEl = document.getElementById('p2UploadStatus');
       if (statusEl) {
-        const warn = errors.length ? ` (${errors.length} rows skipped)` : '';
-        statusEl.innerHTML = `<div class="alert alert-success" style="margin:0">✅ ${parsedCount} predictions loaded from <strong>${filename}</strong>${warn}. Review below and submit when ready.</div>`;
+        const warn = errors.length ? `<div style="margin-top:8px;font-size:12px;color:var(--gold)">⚠️ ${errors.length} notice(s):<br>${errors.map(e=>'• '+e).join('<br>')}</div>` : '';
+        statusEl.innerHTML = `<div class="alert alert-success" style="margin:0">✅ ${parsedCount} predictions loaded from <strong>${filename}</strong>.${warn}</div>`;
       }
       refreshMyPicks();
     })
@@ -2153,18 +2214,20 @@ function showDetail(name) {
           let pts = 0;
           const isExactHere = (mh===ah && ma===aa);
           const isCorrectHere = !isExactHere && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
-          // House rule: predicted draw + correctly called penalty winner scores the result
-          // point even when the actual 120-min score wasn't level (see scoreParticipant).
-          const predictedDrawWithPens = (mh === ma) && pred.penWinner;
-          const predictedPenWinnerTeam = pred.penWinner === 'H' ? homeTeam : awayTeam;
+          const actualWentToPensHere = (ah === aa);
+          const predictedDrawHere = (mh === ma);
+          const predictedPenWinnerTeam = pred.penWinner === 'H' ? homeTeam : pred.penWinner === 'A' ? awayTeam : null;
           const actualWinnerTeam = actual.winner || (ah>aa ? (actual.homeTeam||homeTeam) : aa>ah ? (actual.awayTeam||awayTeam) : null);
-          const wonViaPensHere = !isExactHere && !isCorrectHere && predictedDrawWithPens &&
-            predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam;
 
-          if (isExactHere) { resCls='pred-result-exact'; pts=rp.exact; }
-          else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
-          else if (wonViaPensHere) { resCls='pred-result-correct'; pts=rp.correct; }
-          else { resCls='pred-result-wrong'; pts=0; }
+          if (actualWentToPensHere) {
+            if (predictedDrawHere && isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
+            else if (predictedDrawHere && predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam===actualWinnerTeam) { resCls='pred-result-correct'; pts=rp.correct; }
+            else { resCls='pred-result-wrong'; pts=0; }
+          } else {
+            if (isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
+            else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
+            else { resCls='pred-result-wrong'; pts=0; }
+          }
           ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
         }
 
