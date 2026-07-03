@@ -32,12 +32,12 @@
   body { background: var(--bg); color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
   /* BG */
-  .bg-cinematic { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; display:flex; overflow:hidden; }
-  .bg-panel { flex:1; height:100%; background-size:cover; background-position:center top; filter:grayscale(15%) contrast(115%) brightness(25%); animation:zoomPan 28s ease-in-out infinite alternate; }
-  .panel-left { background: linear-gradient(135deg, #0a1628, #1a2d5a); }
-  .panel-right { background: linear-gradient(135deg, #1a0a28, #2d1a5a); animation-delay:-7s; }
-  .bg-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:radial-gradient(circle at 50% 30%, rgba(6,11,19,0.3) 0%, rgba(3,7,13,0.97) 75%); z-index:-1; }
-  @keyframes zoomPan { 0%{transform:scale(1.02) translateY(0)} 50%{transform:scale(1.12) translateY(-10px)} 100%{transform:scale(1.02) translateY(0)} }
+  .bg-cinematic { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; overflow:hidden; }
+  .bg-panel { position:absolute; top:0; left:0; width:100%; height:100%; background-size:cover; background-position:center center; filter:grayscale(10%) contrast(110%) brightness(55%); animation:zoomPan 28s ease-in-out infinite alternate; }
+  .panel-left { display:none; }
+  .panel-right { display:none; }
+  .bg-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; background:radial-gradient(circle at 50% 30%, rgba(3,7,13,0.55) 0%, rgba(3,7,13,0.88) 100%); z-index:-1; }
+  @keyframes zoomPan { 0%{transform:scale(1.02) translateY(0)} 50%{transform:scale(1.08) translateY(-8px)} 100%{transform:scale(1.02) translateY(0)} }
 
   /* NAV */
   nav { background:rgba(6,11,19,0.9); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:70px; position:sticky; top:0; z-index:100; }
@@ -308,9 +308,7 @@
 <canvas id="confettiCanvas"></canvas>
 
 <div class="bg-cinematic">
-  <!-- 🖼️ BACKGROUND IMAGE: replace 'bg.jpg' with your image filename (must be in same folder as index.html) -->
-  <div class="bg-panel panel-left" style="background-image:url('bg.jpg')"></div>
-  <div class="bg-panel panel-right" style="background-image:url('bg.jpg')"></div>
+  <div class="bg-panel" style="background-image:url('bg.jpg')"></div>
 </div>
 <div class="bg-overlay"></div>
 
@@ -2805,16 +2803,6 @@ function resolveTeamName(placeholder) {
   return placeholder; // still truly TBD
 }
 
-// ============================================================
-// UPLOAD LIST
-// ============================================================
-
-
-// ============================================================
-// UPLOAD LIST
-// ============================================================// ============================================================
-// UPLOAD LIST
-// ============================================================
 // ============================================================
 // UPLOAD LIST
 // ============================================================
