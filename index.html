@@ -798,27 +798,28 @@ function renderSchedule(el) {
 }
 
 // ============================================================
-// SCORING ENGINE — Phase 2 rewritten per WC2026_Final_Rulebook_1.pdf
+// SCORING ENGINE — simplified per admin's confirmed rules
 // ============================================================
-// PHASE 1: correct result = 1pt, exact = 2pts TOTAL (unchanged)
-// PHASE 2 match pts (Correct Winner + Exact Scoreline, additive):
+// PHASE 2 match pts (additive: Correct Winner + Exact Scoreline):
 //   R32: 1+1=2 | R16: 1+2=3 | QF: 1+2=3 | SF: 2+2=4 | Final: 2+3=5 | 3rd: 1+2=3
-// R16/QF: if predicted pairing happens in reality, score normally (no extra).
-//         If not, evaluate each predicted team independently: +1 pt fallback per team that
-//         genuinely advanced to that round (0 if it didn't).
-// SF: +2 pts per correct team reaching SF (always stacks, regardless of pairing).
-// Final: +4 pts per correct team reaching Final (always stacks).
-// Champion bonus: +10. Perfect bracket (all 32 KO matches exact): +5.
-// Penalties (match drawn after 120 mins):
-//   - predicted draw + exact 120-min score → full round points
-//   - predicted draw (wrong score) + correct pens winner → correct-winner pt only
-//   - predicted an outright (non-draw) winner, match went to pens, AND that team actually
-//     won → correct-winner pt only (HOUSE RULE: confirmed deviation from the literal PDF
-//     table, which says 0 pts here. Admin's call: "the exact score speaks for the exact team
-//     which wins" — correctly naming the winner is still worth the correct-winner point even
-//     without a draw prediction. Exact-score points are never awarded in this branch.)
-//   - predicted an outright (non-draw) winner, match went to pens, and that team did NOT
-//     win → 0 pts, as the PDF table specifies
+//
+// PENALTY LOGIC (120-min score used for all comparisons):
+//   Predict draw (e.g. 1-1) + select pens winner:
+//     - Actual drew + EXACT same score + correct pens winner → correct + exact pts
+//     - Actual drew + EXACT same score + WRONG pens winner  → exact pts only (no correct-winner pt)
+//     - Actual drew + different draw score (e.g. predicted 1-1, actual 2-2) → 0 pts
+//     - Actual did NOT draw (no pens)                       → 0 pts (wrong result)
+//   Predict outright winner (e.g. 2-0):
+//     - Actual decided in 120 min, score exact              → correct + exact pts
+//     - Actual decided in 120 min, correct winner           → correct pt only
+//     - Actual went to pens AND your predicted team won     → correct pt only (house rule)
+//     - Actual went to pens AND your predicted team lost    → 0 pts
+//
+// R16/QF fallback: if predicted pairing didn't happen, 1pt per predicted team that genuinely
+//   advanced. No fallback if pairing happened (just normal match points).
+// SF bonus: +2 per correct team reaching SF (always stacks).
+// Final bonus: +4 per correct team reaching Final (always stacks).
+// Champion bonus: +10. Perfect bracket: +5.
 
 const ROUND_PTS = {
   R32:  { correct:1, exact:1 },
@@ -912,59 +913,70 @@ function scoreParticipant(p) {
     perfectMatchesNeeded++;
     const rp = ROUND_PTS[m.stage] || ROUND_PTS['R32'];
 
-    // 120-minute scoreline comparison only — penalty shootout goals never count here.
+    // 120-minute scoreline comparison only
     const isExact = (mh===ah && ma===aa);
     const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
-    const actualWentToPens = (ah === aa); // 120-min draw = penalties were needed
+
+    let matchPts = 0;
     const predictedDraw = (mh === ma);
+    const actualWentToPens = (ah === aa); // 120-min draw means it went to pens
 
     const predHome = m.predHome || m.home;
     const predAway = m.predAway || m.away;
     const predictedPenWinnerTeam = m.penWinner === 'H' ? predHome : m.penWinner === 'A' ? predAway : null;
     const actualWinnerTeam = a.winner || (ah > aa ? (a.homeTeam || m.home) : aa > ah ? (a.awayTeam || m.away) : null);
 
-    let matchPts = 0;
-
-    if (actualWentToPens) {
-      // --- Match went to penalties in real life ---
-      if (predictedDraw && isExact) {
-        // Draw scoreline + exact 120-min score predicted → full round points
-        matchPts = rp.correct + rp.exact;
-        p2ExactCount++; exactCount++; perfectMatchesCorrect++;
-        p2ResultCount++; resultCount++;
-      } else if (predictedDraw && predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
-        // Draw scoreline predicted (wrong score) but correct pens winner → correct-winner pt only
+    if (predictedDraw) {
+      // ── User predicted a draw scoreline ──────────────────────────────────────
+      if (actualWentToPens && isExact) {
+        // Actual also drew with exact same score
+        if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
+          // Exact draw score + correct pens winner → correct + exact
+          matchPts = rp.correct + rp.exact;
+          p2ExactCount++; exactCount++; perfectMatchesCorrect++;
+          p2ResultCount++; resultCount++;
+        } else {
+          // Exact draw score + wrong pens winner → exact pts only
+          matchPts = rp.exact;
+          perfectBracket = false;
+        }
+      } else if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
+        // Score wasn't exact (different draw or no draw in reality), BUT the team they
+        // picked to advance via pens actually won — award correct-winner point
         matchPts = rp.correct;
         p2ResultCount++; resultCount++;
         perfectBracket = false;
       } else {
-        // Outright (non-draw) winner predicted, but match actually went to penalties.
-        // HOUSE RULE (deliberate deviation from the literal PDF table, confirmed with admin):
-        // the team you picked to win still counts as your "Correct Winning Team" call even
-        // though the scoreline wasn't a draw — award the correct-winner point only (never the
-        // exact-score points, since the 120-min score genuinely didn't match). If the team you
-        // picked to win did NOT actually win, this stays 0 as the table specifies.
-        const predictedOutrightWinnerTeam = mh > ma ? predHome : ma > mh ? predAway : null;
+        // Wrong score AND wrong/no winner → 0 pts
+        matchPts = 0;
+        perfectBracket = false;
+      }
+    } else {
+      // ── User predicted an outright (non-draw) winner ─────────────────────────
+      const predictedOutrightWinnerTeam = mh > ma ? predHome : predAway;
+      if (!actualWentToPens) {
+        // Match was decided in 120 min — standard scoring
+        if (isExact) {
+          matchPts = rp.correct + rp.exact;
+          p2ExactCount++; exactCount++; perfectMatchesCorrect++;
+          p2ResultCount++; resultCount++;
+        } else if (isCorrectResult) {
+          matchPts = rp.correct;
+          p2ResultCount++; resultCount++;
+          perfectBracket = false;
+        } else {
+          matchPts = 0;
+          perfectBracket = false;
+        }
+      } else {
+        // Match went to penalties — user predicted outright winner
+        // House rule: correct predicted winner still earns the correct-winner pt
         if (predictedOutrightWinnerTeam && actualWinnerTeam && predictedOutrightWinnerTeam === actualWinnerTeam) {
           matchPts = rp.correct;
           p2ResultCount++; resultCount++;
         } else {
           matchPts = 0;
         }
-        perfectBracket = false;
-      }
-    } else {
-      // --- Match decided in 120 minutes (no penalties) ---
-      if (isExact) {
-        matchPts = rp.correct + rp.exact;
-        p2ExactCount++; exactCount++; perfectMatchesCorrect++;
-        p2ResultCount++; resultCount++;
-      } else if (isCorrectResult) {
-        matchPts = rp.correct;
-        p2ResultCount++; resultCount++;
-        perfectBracket = false;
-      } else {
-        matchPts = 0;
         perfectBracket = false;
       }
     }
@@ -2229,21 +2241,30 @@ function showDetail(name) {
           const predictedPenWinnerTeam = pred.penWinner === 'H' ? homeTeam : pred.penWinner === 'A' ? awayTeam : null;
           const actualWinnerTeam = actual.winner || (ah>aa ? (actual.homeTeam||homeTeam) : aa>ah ? (actual.awayTeam||awayTeam) : null);
 
-          if (actualWentToPensHere) {
-            if (predictedDrawHere && isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
-            else if (predictedDrawHere && predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam===actualWinnerTeam) { resCls='pred-result-correct'; pts=rp.correct; }
-            else if (!predictedDrawHere) {
-              // Outright (non-draw) winner predicted, match went to pens — house rule: the team
-              // you picked to win still counts as a correct winner call if they actually won.
-              const predictedOutrightWinnerTeam = mh > ma ? homeTeam : ma > mh ? awayTeam : null;
+          if (predictedDrawHere) {
+            if (actualWentToPensHere && isExactHere) {
+              if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
+                resCls='pred-result-exact'; pts=rp.correct+rp.exact;   // exact draw + correct pens winner
+              } else {
+                resCls='pred-result-correct'; pts=rp.exact;             // exact draw + wrong pens winner
+              }
+            } else if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
+              resCls='pred-result-correct'; pts=rp.correct;             // wrong score but correct winner picked via pens
+            } else {
+              resCls='pred-result-wrong'; pts=0;
+            }
+          } else {
+            // Outright winner predicted
+            const predictedOutrightWinnerTeam = mh > ma ? homeTeam : awayTeam;
+            if (!actualWentToPensHere) {
+              if (isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
+              else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
+              else { resCls='pred-result-wrong'; pts=0; }
+            } else {
+              // Match went to pens — house rule: correct predicted winner still earns correct-winner pt
               if (predictedOutrightWinnerTeam && actualWinnerTeam && predictedOutrightWinnerTeam === actualWinnerTeam) { resCls='pred-result-correct'; pts=rp.correct; }
               else { resCls='pred-result-wrong'; pts=0; }
             }
-            else { resCls='pred-result-wrong'; pts=0; }
-          } else {
-            if (isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
-            else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
-            else { resCls='pred-result-wrong'; pts=0; }
           }
           ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
         }
