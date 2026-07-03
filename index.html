@@ -2815,7 +2815,9 @@ function removeParticipant(name) {
   if(!state.isAdmin||!confirm('Remove '+name+'?')) return;
   db.collection("participants").doc(name).delete();
 }
-
+// ============================================================
+// Finals
+// ============================================================
 window.addEventListener('resize',()=>{
   const scores=getAllScores();
   if(scores.length&&document.getElementById('page-dashboard').classList.contains('active')) drawBar(scores);
