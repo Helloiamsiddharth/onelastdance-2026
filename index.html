@@ -29,7 +29,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: url('bg.jpg') center center / cover no-repeat fixed; background-color: #03070d; }
+  body { background: var(--bg); color: var(--text-primary); font-family: 'Plus Jakarta Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
 
   /* BG */
   .bg-cinematic { position: fixed; top:0; left:0; width:100vw; height:100vh; z-index:-2; display:flex; overflow:hidden; }
@@ -88,7 +88,6 @@
   .rank-3 { background:#cd7f32; color:#fff; }
   .rank-other { background:rgba(255,255,255,0.1); color:var(--text-secondary); }
 
-  /*Updates */
   /* LEADERBOARD */
   .lb-table { width:100%; border-collapse:collapse; }
   .lb-table th { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; padding:14px 16px; border-bottom:2px solid var(--border); font-weight:600; }
@@ -309,8 +308,9 @@
 <canvas id="confettiCanvas"></canvas>
 
 <div class="bg-cinematic">
-  <div class="bg-panel panel-left"></div>
-  <div class="bg-panel panel-right"></div>
+  <!-- 🖼️ BACKGROUND IMAGE: replace 'bg.jpg' with your image filename (must be in same folder as index.html) -->
+  <div class="bg-panel panel-left" style="background-image:url('bg.jpg')"></div>
+  <div class="bg-panel panel-right" style="background-image:url('bg.jpg')"></div>
 </div>
 <div class="bg-overlay"></div>
 
@@ -2073,6 +2073,13 @@ function parseParticipant(raw, filename) {
 // ============================================================
 // DASHBOARD
 // ============================================================
+// Shared helper — extracts meaningful initials from full participant name strings
+// like "Sachin Thapa – FIFA World Cup – 2026" → "ST"
+function getInitials(name) {
+  const parts = name.split(/[\s\-–]+/).filter(p => p.length > 1 && !/FIFA|World|Cup|2026|NO|ERROR|EXCEL/i.test(p));
+  return parts.length >= 2 ? (parts[0][0]+parts[1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+}
+
 function refreshDashboard() {
   const names=Object.keys(state.participants);
   if(!names.length){
@@ -2104,7 +2111,7 @@ function refreshDashboard() {
   const order=[top3[1],top3[0],top3[2]],cl=['podium-2','podium-1','podium-3'],lb=['2nd','1st','3rd'];
   document.getElementById('podiumEl').innerHTML=order.map((p,i)=>p?`
     <div class="podium-place ${cl[i]}">
-      <div class="podium-avatar">${p.name.slice(0,2).toUpperCase()}</div>
+      <div class="podium-avatar">${getInitials(p.name)}</div>
       <div class="podium-name">${p.name}</div>
       <div class="podium-name" style="color:var(--gold);font-size:11px;">${p.total} Pts</div>
       <div class="podium-block">${lb[i]}</div>
@@ -2291,7 +2298,7 @@ function showDetail(name) {
   dv.innerHTML = `<div>
     <button class="save-btn" style="margin-bottom:20px" onclick="backToDashboard()">← Back</button>
     <div class="profile-hero">
-      <div class="profile-avatar-lg">${name.slice(0,2).toUpperCase()}</div>
+      <div class="profile-avatar-lg">${getInitials(name)}</div>
       <div>
         <div class="profile-name">${name}</div>
         <div class="profile-sub">${s.total} pts · Rank #${getAllScores().find(x=>x.name===name)?.rank || '—'} · Phase 1: ${s.phase1Total} · Phase 2: ${s.koPts}</div>
@@ -2816,9 +2823,7 @@ function removeParticipant(name) {
   if(!state.isAdmin||!confirm('Remove '+name+'?')) return;
   db.collection("participants").doc(name).delete();
 }
-// ============================================================
-// Finals
-// ============================================================
+
 window.addEventListener('resize',()=>{
   const scores=getAllScores();
   if(scores.length&&document.getElementById('page-dashboard').classList.contains('active')) drawBar(scores);
