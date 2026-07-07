@@ -887,6 +887,7 @@ function scoreParticipant(p) {
 
   // Build per-stage sets of teams that actually qualified (from actual KO results),
   // needed for the R16/QF fallback rule: 1pt per predicted team that genuinely advanced.
+  // Store names lowercased+trimmed for reliable comparison.
   const qualifiedByStage = { R16: new Set(), QF: new Set(), SF: new Set(), Final: new Set() };
   Object.keys(state.koActualResults).forEach(mid => {
     const a = state.koActualResults[mid];
@@ -894,8 +895,11 @@ function scoreParticipant(p) {
     const fixtureEntry = WC2026_KO_FIXTURES.find(f => f.id === mid);
     if (!fixtureEntry) return;
     const nextStage = { R32:'R16', R16:'QF', QF:'SF', SF:'Final' }[fixtureEntry.stage];
-    if (nextStage && qualifiedByStage[nextStage]) qualifiedByStage[nextStage].add(a.winner);
+    if (nextStage && qualifiedByStage[nextStage]) qualifiedByStage[nextStage].add(a.winner.trim().toLowerCase());
   });
+
+  // Helper: check if a team name is in a qualified set (case-insensitive)
+  const teamQualified = (set, name) => !!name && set.has(name.trim().toLowerCase());
 
   let perfectBracket = true;
   let perfectMatchesNeeded = 0;
@@ -920,8 +924,13 @@ function scoreParticipant(p) {
     const predictedDraw = (mh === ma);
     const actualWentToPens = (ah === aa); // 120-min draw means it went to pens
 
-    const predHome = m.predHome || m.home;
-    const predAway = m.predAway || m.away;
+    // Resolve predicted team names — prefer explicitly stored names over fixture placeholders.
+    // For R16+ fixtures, m.home/m.away may still be "W(M73)" placeholders if admin hasn't
+    // set them; fall back to the actual match's homeTeam/awayTeam so name comparisons work.
+    const predHome = (m.predHome && !m.predHome.startsWith('W(') && !m.predHome.startsWith('L(')) ? m.predHome
+                   : (a.homeTeam || m.predHome || m.home);
+    const predAway = (m.predAway && !m.predAway.startsWith('W(') && !m.predAway.startsWith('L(')) ? m.predAway
+                   : (a.awayTeam || m.predAway || m.away);
     const predictedPenWinnerTeam = m.penWinner === 'H' ? predHome : m.penWinner === 'A' ? predAway : null;
     const actualWinnerTeam = a.winner || (ah > aa ? (a.homeTeam || m.home) : aa > ah ? (a.awayTeam || m.away) : null);
 
@@ -983,29 +992,38 @@ function scoreParticipant(p) {
     koPts += matchPts;
 
     // --- R16 / QF fallback rule ---
-    // If the predicted matchup pairing happened in reality, no extra fallback points.
-    // If not, evaluate each predicted team independently: +1 pt per team that genuinely advanced.
+    // First check if the predicted pairing actually happened in reality.
+    // If NOT: zero out the match points already added above (wrong pairing = no scoreline to compare),
+    //         then award 1pt fallback for each predicted team that genuinely advanced to this round.
+    // If YES: keep match points as-is, no fallback on top.
     if (rp.fallback) {
-      const actualHome = a.homeTeam || '';
-      const actualAway = a.awayTeam || '';
-      const predPair = new Set([predHome, predAway].filter(Boolean));
+      const actualHome = (a.homeTeam || '').trim().toLowerCase();
+      const actualAway = (a.awayTeam || '').trim().toLowerCase();
+      const predPair = new Set([predHome, predAway].filter(Boolean).map(t => t.trim().toLowerCase()));
       const actualPair = new Set([actualHome, actualAway].filter(Boolean));
       const pairingMatchesReality = predPair.size === 2 && actualPair.size === 2 &&
         [...predPair].every(t => actualPair.has(t));
       if (!pairingMatchesReality) {
+        // Undo the match points scored above — wrong pairing means no valid score comparison
+        koPts -= matchPts;
+        // Also undo any stat counters incremented above for this match
+        if (matchPts === rp.correct + rp.exact) { p2ExactCount--; exactCount--; perfectMatchesCorrect--; p2ResultCount--; resultCount--; }
+        else if (matchPts === rp.correct) { p2ResultCount--; resultCount--; }
+        // Award 1pt fallback for each predicted team that genuinely advanced to this round
         const stageQualified = qualifiedByStage[m.stage] || new Set();
-        if (predHome && stageQualified.has(predHome)) koPts += rp.fallback;
-        if (predAway && stageQualified.has(predAway)) koPts += rp.fallback;
+        if (teamQualified(stageQualified, predHome)) koPts += rp.fallback;
+        if (teamQualified(stageQualified, predAway)) koPts += rp.fallback;
+        perfectBracket = false;
       }
     }
 
     // --- SF / Final advancement bonus (always stacks on top of match points) ---
     if (rp.adv && rp.adv > 0 && rp.advAlways) {
-      const actualHome = a.homeTeam || '';
-      const actualAway = a.awayTeam || '';
+      const actualHome = (a.homeTeam || '').trim().toLowerCase();
+      const actualAway = (a.awayTeam || '').trim().toLowerCase();
       const teamsInActualMatch = new Set([actualHome, actualAway].filter(Boolean));
-      if (predHome && teamsInActualMatch.has(predHome)) koPts += rp.adv;
-      if (predAway && teamsInActualMatch.has(predAway)) koPts += rp.adv;
+      if (predHome && teamsInActualMatch.has(predHome.trim().toLowerCase())) koPts += rp.adv;
+      if (predAway && teamsInActualMatch.has(predAway.trim().toLowerCase())) koPts += rp.adv;
     }
   });
 
@@ -2804,7 +2822,7 @@ function resolveTeamName(placeholder) {
 }
 
 // ============================================================
-// UPLOAD LIST Files
+// UPLOAD LIST
 // ============================================================
 function updateUploadedList() {
   const names=Object.keys(state.participants);
