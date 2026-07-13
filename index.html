@@ -375,6 +375,10 @@
         <canvas id="barChart" height="200" style="width:100%;height:200px;max-height:200px;"></canvas>
       </div>
     </div>
+    <div class="card" style="margin-bottom:24px">
+      <div class="card-title">💰 Prize Money <span style="font-size:12px;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;margin-left:8px">— live standings · ties split the prize equally</span></div>
+      <div id="prizeBoard"></div>
+    </div>
     <div class="card">
       <div class="card-title">👥 All Competitors <span style="font-size:13px;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;margin-left:8px">— select for breakdown</span></div>
       <div class="participants-grid" id="participantsGrid"></div>
@@ -410,17 +414,17 @@
         <div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Phase 2 — Knockout</div>
           <table class="pts-table">
-            <tr><th>Round</th><th>Correct / Exact (max)</th></tr>
-            <tr><td>R32</td><td>1 / 2 pts</td></tr>
-            <tr><td>R16</td><td>1 / 3 pts*</td></tr>
-            <tr><td>QF</td><td>1 / 3 pts*</td></tr>
-            <tr><td>SF</td><td>2 / 4 pts + 2 adv</td></tr>
-            <tr><td>Final</td><td>2 / 5 pts + 4 adv</td></tr>
-            <tr><td>3rd Place</td><td>1 / 3 pts</td></tr>
+            <tr><th>Round</th><th>Winner + Exact = Total</th></tr>
+            <tr><td>R32</td><td>1 + 1 = 2 pts</td></tr>
+            <tr><td>R16</td><td>1 + 2 = 3 pts</td></tr>
+            <tr><td>QF</td><td>1 + 2 = 3 pts <span style="color:var(--accent)">(+2 adv*)</span></td></tr>
+            <tr><td>SF</td><td>2 + 2 = 4 pts <span style="color:var(--accent)">(+4 adv*)</span></td></tr>
+            <tr><td>Final</td><td>2 + 3 = 5 pts</td></tr>
+            <tr><td>3rd Place</td><td>1 + 2 = 3 pts</td></tr>
             <tr><td>Champion pick</td><td>+10 pts bonus</td></tr>
             <tr><td>Perfect Bracket</td><td>+5 pts bonus</td></tr>
           </table>
-          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace">*R16/QF: if your predicted matchup doesn't happen, each team you picked still earns +1 pt if it genuinely advanced. SF/Final advancement bonuses always stack on top of match points.</p>
+          <p style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:'JetBrains Mono',monospace">Winner pt: your predicted winner won the match — pairing doesn't matter. Exact pts: correct pairing AND exact 120-min score. Draws: pens pick counts as your winner. *Adv bonus stacks automatically whenever your QF/SF winner pt is earned. Perfect Bracket: every KO winner called correctly (all 32 matches).</p>
         </div>
       </div>
     </div>
@@ -798,37 +802,103 @@ function renderSchedule(el) {
 }
 
 // ============================================================
-// SCORING ENGINE — simplified per admin's confirmed rules
+// SCORING ENGINE — FINAL RULES (fallback removed)
 // ============================================================
-// PHASE 2 match pts (additive: Correct Winner + Exact Scoreline):
+// PHASE 2 match pts (additive: Correct Winning Team + Exact Scoreline):
 //   R32: 1+1=2 | R16: 1+2=3 | QF: 1+2=3 | SF: 2+2=4 | Final: 2+3=5 | 3rd: 1+2=3
 //
-// PENALTY LOGIC (120-min score used for all comparisons):
-//   Predict draw (e.g. 1-1) + select pens winner:
-//     - Actual drew + EXACT same score + correct pens winner → correct + exact pts
-//     - Actual drew + EXACT same score + WRONG pens winner  → exact pts only (no correct-winner pt)
-//     - Actual drew + different draw score (e.g. predicted 1-1, actual 2-2) → 0 pts
-//     - Actual did NOT draw (no pens)                       → 0 pts (wrong result)
-//   Predict outright winner (e.g. 2-0):
-//     - Actual decided in 120 min, score exact              → correct + exact pts
-//     - Actual decided in 120 min, correct winner           → correct pt only
-//     - Actual went to pens AND your predicted team won     → correct pt only (house rule)
-//     - Actual went to pens AND your predicted team lost    → 0 pts
+// CORRECT WINNING TEAM pt — team-name based, PAIRING DOES NOT MATTER:
+//   awarded if the team the user predicted to win (their pens pick when they
+//   predicted a draw, otherwise the team they gave the higher score) is the
+//   actual winner of that match.
 //
-// R16/QF fallback: if predicted pairing didn't happen, 1pt per predicted team that genuinely
-//   advanced. No fallback if pairing happened (just normal match points).
-// SF bonus: +2 per correct team reaching SF (always stacks).
-// Final bonus: +4 per correct team reaching Final (always stacks).
-// Champion bonus: +10. Perfect bracket: +5.
+// EXACT SCORELINE pts — PAIRING MATTERS:
+//   awarded only if the user's predicted pairing is the actual pairing (same
+//   two teams; home/away order irrelevant) AND the predicted score equals the
+//   actual 120-minute score (aligned by team if the pairing was flipped).
+//
+// PENALTIES (actual 120-min score was a draw):
+//   Exact pts -> pairing correct + predicted the same draw score.
+//   Winner pt -> the team the user selected as pens winner won the shootout.
+//   Outright (non-draw) prediction whose team won via pens -> winner pt only.
+//
+// ADVANCEMENT BONUS (stacks on the winner pt, pairing irrelevant):
+//   QF match winner correct -> +2 (that team advanced to the Semi-Finals)
+//   SF match winner correct -> +4 (that team advanced to the Final)
+//
+// CHAMPION: +10 if predicted champion = actual champion (noted on the Final).
+// PERFECT BRACKET: +5 if the user called the correct winner of EVERY knockout
+//   match (all 32, incl. 3rd place) — pairing irrelevant.
 
 const ROUND_PTS = {
   R32:  { correct:1, exact:1 },
-  R16:  { correct:1, exact:2, fallback:1 },
-  QF:   { correct:1, exact:2, fallback:1 },
-  SF:   { correct:2, exact:2, adv:2, advAlways:true },
-  Final:{ correct:2, exact:3, adv:4, advAlways:true },
+  R16:  { correct:1, exact:2 },
+  QF:   { correct:1, exact:2, bonus:2, bonusTo:'the Semi-Finals' },
+  SF:   { correct:2, exact:2, bonus:4, bonusTo:'the Final' },
+  Final:{ correct:2, exact:3 },
   '3rd':{ correct:1, exact:2 },
 };
+
+function _normTeam(t){ return (t===null||t===undefined)?'':String(t).trim().toLowerCase(); }
+function _isPlaceholderTeam(t){ return !t || /^W\(|^L\(/.test(String(t).trim()); }
+
+// ------------------------------------------------------------
+// Shared per-match KO scorer — used by the engine AND every UI
+// view so displayed points always agree with the leaderboard.
+// Returns null when the match can't be scored yet (no result /
+// no valid prediction).
+// ------------------------------------------------------------
+function scoreKOMatch(pred, a, stage) {
+  if (!pred || !a || a.home===null || a.home===undefined || a.home==='') return null;
+  const ah=parseInt(a.home), aa=parseInt(a.away);
+  const mh=parseInt(pred.myHome), ma=parseInt(pred.myAway);
+  if (isNaN(ah)||isNaN(aa)||isNaN(mh)||isNaN(ma)) return null;
+
+  const rp = ROUND_PTS[stage] || ROUND_PTS.R32;
+  const res = { matchPts:0, bonusPts:0, pts:0, exact:false, winnerCorrect:false, notes:[], cls:'pred-result-wrong', actualWinner:null };
+
+  // Team names the user actually predicted (never trust W(..)/L(..) placeholders)
+  const predHome = _isPlaceholderTeam(pred.homeTeam) ? null : String(pred.homeTeam).trim();
+  const predAway = _isPlaceholderTeam(pred.awayTeam) ? null : String(pred.awayTeam).trim();
+  const actualHome = a.homeTeam ? String(a.homeTeam).trim() : null;
+  const actualAway = a.awayTeam ? String(a.awayTeam).trim() : null;
+
+  // Actual winner (team name). For pens draws this comes from a.winner.
+  res.actualWinner = a.winner || (ah>aa ? actualHome : aa>ah ? actualAway : null);
+
+  // Predicted winner (team name)
+  const predictedDraw = (mh===ma);
+  const predictedWinner = predictedDraw
+    ? (pred.penWinner==='H' ? predHome : pred.penWinner==='A' ? predAway : null)
+    : (mh>ma ? predHome : predAway);
+
+  // 1) CORRECT WINNING TEAM — pairing irrelevant
+  if (predictedWinner && res.actualWinner && _normTeam(predictedWinner)===_normTeam(res.actualWinner)) {
+    res.winnerCorrect = true;
+    res.matchPts += rp.correct;
+  }
+
+  // 2) EXACT SCORELINE — correct pairing (order-insensitive) + exact 120-min score
+  if (predHome && predAway && actualHome && actualAway) {
+    const straight = _normTeam(predHome)===_normTeam(actualHome) && _normTeam(predAway)===_normTeam(actualAway);
+    const flipped  = _normTeam(predHome)===_normTeam(actualAway) && _normTeam(predAway)===_normTeam(actualHome);
+    if (straight || flipped) {
+      const alignedH = flipped ? ma : mh;   // align predicted score to actual home/away by team
+      const alignedA = flipped ? mh : ma;
+      if (alignedH===ah && alignedA===aa) { res.exact = true; res.matchPts += rp.exact; }
+    }
+  }
+
+  // 3) ADVANCEMENT BONUS — stacks whenever the winner pt was earned (QF: +2, SF: +4)
+  if (res.winnerCorrect && rp.bonus) {
+    res.bonusPts = rp.bonus;
+    res.notes.push('\uD83D\uDE80 +' + rp.bonus + ' bonus: ' + res.actualWinner + ' advanced to ' + rp.bonusTo);
+  }
+
+  res.pts = res.matchPts + res.bonusPts;
+  res.cls = res.exact ? 'pred-result-exact' : res.winnerCorrect ? 'pred-result-correct' : 'pred-result-wrong';
+  return res;
+}
 
 function scoreParticipant(p) {
   let gmp=0, esp=0, p1total=0;
@@ -836,7 +906,7 @@ function scoreParticipant(p) {
   let exactCount=0, resultCount=0;
   let p2ExactCount=0, p2ResultCount=0;
 
-  // Phase 1: group matches (from uploaded xlsx)
+  // Phase 1: group matches (from uploaded xlsx) — unchanged
   if (p.groupMatches) {
     p.groupMatches.forEach(m => {
       const a = state.actualResults[m.id];
@@ -849,197 +919,40 @@ function scoreParticipant(p) {
   }
   p1total = gmp + esp;
 
-  // Phase 2: use in-app Phase 2 predictions keyed by match ID (M73, M74, etc.)
+  // Phase 2: in-app predictions keyed by match ID (M73..M104)
   const lockData = state.userLocks[p.name] || {};
   const p2Preds = lockData.phase2Predictions || {};
 
-  // Build ko match map: start from hardcoded WC2026_KO_FIXTURES structure,
-  // then overlay actual team names from admin-saved phase2Brackets for R32,
-  // then overlay user's in-app predictions.
-  const koMatchMap = {};
-  WC2026_KO_FIXTURES.forEach(m => { koMatchMap[m.id] = { ...m, source:'fixture' }; });
+  let championHit = false;
+  let perfectBracket = true; // must call the winner of ALL 32 KO matches
 
-  // Override R32 home/away with admin-defined fixtures (actual team names)
-  (state.phase2Brackets || []).forEach(f => {
-    if (f.stage === 'R32' && koMatchMap[f.id]) {
-      if (f.home && f.home !== 'TBD') koMatchMap[f.id].home = f.home;
-      if (f.away && f.away !== 'TBD') koMatchMap[f.id].away = f.away;
-    }
+  WC2026_KO_FIXTURES.forEach(f => {
+    const pred = p2Preds[f.id];
+    const a = state.koActualResults[f.id];
+    const r = pred ? scoreKOMatch(pred, a, f.stage) : null;
+    if (!r) { perfectBracket = false; return; } // not played or no prediction yet
+    koPts += r.pts;
+    if (r.winnerCorrect) { p2ResultCount++; resultCount++; }
+    else perfectBracket = false;
+    if (r.exact) { p2ExactCount++; exactCount++; }
   });
 
-  // Overlay user predictions (scores + pen winner + teams they predicted)
-  Object.keys(p2Preds).forEach(mid => {
-    if (mid === 'champion') return;
-    const pred = p2Preds[mid];
-    if (koMatchMap[mid]) {
-      // Use the resolved homeTeam/awayTeam saved with the prediction if available
-      koMatchMap[mid] = {
-        ...koMatchMap[mid],
-        myHome: pred.myHome,
-        myAway: pred.myAway,
-        penWinner: pred.penWinner || null,
-        // Predicted team names (what the user saw when they filled the form)
-        predHome: pred.homeTeam || koMatchMap[mid].home,
-        predAway: pred.awayTeam || koMatchMap[mid].away,
-        source: 'inapp'
-      };
-    }
-  });
-
-  // Build per-stage sets of teams that actually qualified (from actual KO results),
-  // needed for the R16/QF fallback rule: 1pt per predicted team that genuinely advanced.
-  // Store names lowercased+trimmed for reliable comparison.
-  const qualifiedByStage = { R16: new Set(), QF: new Set(), SF: new Set(), Final: new Set() };
-  Object.keys(state.koActualResults).forEach(mid => {
-    const a = state.koActualResults[mid];
-    if (!a || !a.winner) return;
-    const fixtureEntry = WC2026_KO_FIXTURES.find(f => f.id === mid);
-    if (!fixtureEntry) return;
-    const nextStage = { R32:'R16', R16:'QF', QF:'SF', SF:'Final' }[fixtureEntry.stage];
-    if (nextStage && qualifiedByStage[nextStage]) qualifiedByStage[nextStage].add(a.winner.trim().toLowerCase());
-  });
-
-  // Helper: check if a team name is in a qualified set (case-insensitive)
-  const teamQualified = (set, name) => !!name && set.has(name.trim().toLowerCase());
-
-  let perfectBracket = true;
-  let perfectMatchesNeeded = 0;
-  let perfectMatchesCorrect = 0;
-
-  Object.values(koMatchMap).forEach(m => {
-    const a = state.koActualResults[m.id];
-    if (!a || a.home===null || a.home===undefined || a.home==='') {
-      perfectBracket = false; return;
-    }
-    const ah=parseInt(a.home), aa=parseInt(a.away), mh=parseInt(m.myHome), ma=parseInt(m.myAway);
-    if (isNaN(mh)||isNaN(ma)) { perfectBracket=false; return; }
-
-    perfectMatchesNeeded++;
-    const rp = ROUND_PTS[m.stage] || ROUND_PTS['R32'];
-
-    // 120-minute scoreline comparison only
-    const isExact = (mh===ah && ma===aa);
-    const isCorrectResult = !isExact && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
-
-    let matchPts = 0;
-    const predictedDraw = (mh === ma);
-    const actualWentToPens = (ah === aa); // 120-min draw means it went to pens
-
-    // Resolve predicted team names — prefer explicitly stored names over fixture placeholders.
-    // For R16+ fixtures, m.home/m.away may still be "W(M73)" placeholders if admin hasn't
-    // set them; fall back to the actual match's homeTeam/awayTeam so name comparisons work.
-    const predHome = (m.predHome && !m.predHome.startsWith('W(') && !m.predHome.startsWith('L(')) ? m.predHome
-                   : (a.homeTeam || m.predHome || m.home);
-    const predAway = (m.predAway && !m.predAway.startsWith('W(') && !m.predAway.startsWith('L(')) ? m.predAway
-                   : (a.awayTeam || m.predAway || m.away);
-    const predictedPenWinnerTeam = m.penWinner === 'H' ? predHome : m.penWinner === 'A' ? predAway : null;
-    const actualWinnerTeam = a.winner || (ah > aa ? (a.homeTeam || m.home) : aa > ah ? (a.awayTeam || m.away) : null);
-
-    if (predictedDraw) {
-      // ── User predicted a draw scoreline ──────────────────────────────────────
-      if (actualWentToPens && isExact) {
-        // Actual also drew with exact same score
-        if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
-          // Exact draw score + correct pens winner → correct + exact
-          matchPts = rp.correct + rp.exact;
-          p2ExactCount++; exactCount++; perfectMatchesCorrect++;
-          p2ResultCount++; resultCount++;
-        } else {
-          // Exact draw score + wrong pens winner → exact pts only
-          matchPts = rp.exact;
-          perfectBracket = false;
-        }
-      } else if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
-        // Score wasn't exact (different draw or no draw in reality), BUT the team they
-        // picked to advance via pens actually won — award correct-winner point
-        matchPts = rp.correct;
-        p2ResultCount++; resultCount++;
-        perfectBracket = false;
-      } else {
-        // Wrong score AND wrong/no winner → 0 pts
-        matchPts = 0;
-        perfectBracket = false;
-      }
-    } else {
-      // ── User predicted an outright (non-draw) winner ─────────────────────────
-      const predictedOutrightWinnerTeam = mh > ma ? predHome : predAway;
-      if (!actualWentToPens) {
-        // Match was decided in 120 min — standard scoring
-        if (isExact) {
-          matchPts = rp.correct + rp.exact;
-          p2ExactCount++; exactCount++; perfectMatchesCorrect++;
-          p2ResultCount++; resultCount++;
-        } else if (isCorrectResult) {
-          matchPts = rp.correct;
-          p2ResultCount++; resultCount++;
-          perfectBracket = false;
-        } else {
-          matchPts = 0;
-          perfectBracket = false;
-        }
-      } else {
-        // Match went to penalties — user predicted outright winner
-        // House rule: correct predicted winner still earns the correct-winner pt
-        if (predictedOutrightWinnerTeam && actualWinnerTeam && predictedOutrightWinnerTeam === actualWinnerTeam) {
-          matchPts = rp.correct;
-          p2ResultCount++; resultCount++;
-        } else {
-          matchPts = 0;
-        }
-        perfectBracket = false;
-      }
-    }
-
-    koPts += matchPts;
-
-    // --- R16 / QF fallback rule ---
-    // First check if the predicted pairing actually happened in reality.
-    // If NOT: zero out the match points already added above (wrong pairing = no scoreline to compare),
-    //         then award 1pt fallback for each predicted team that genuinely advanced to this round.
-    // If YES: keep match points as-is, no fallback on top.
-    if (rp.fallback) {
-      const actualHome = (a.homeTeam || '').trim().toLowerCase();
-      const actualAway = (a.awayTeam || '').trim().toLowerCase();
-      const predPair = new Set([predHome, predAway].filter(Boolean).map(t => t.trim().toLowerCase()));
-      const actualPair = new Set([actualHome, actualAway].filter(Boolean));
-      const pairingMatchesReality = predPair.size === 2 && actualPair.size === 2 &&
-        [...predPair].every(t => actualPair.has(t));
-      if (!pairingMatchesReality) {
-        // Undo the match points scored above — wrong pairing means no valid score comparison
-        koPts -= matchPts;
-        // Also undo any stat counters incremented above for this match
-        if (matchPts === rp.correct + rp.exact) { p2ExactCount--; exactCount--; perfectMatchesCorrect--; p2ResultCount--; resultCount--; }
-        else if (matchPts === rp.correct) { p2ResultCount--; resultCount--; }
-        // Award 1pt fallback for each predicted team that genuinely advanced to this round
-        const stageQualified = qualifiedByStage[m.stage] || new Set();
-        if (teamQualified(stageQualified, predHome)) koPts += rp.fallback;
-        if (teamQualified(stageQualified, predAway)) koPts += rp.fallback;
-        perfectBracket = false;
-      }
-    }
-
-    // --- SF / Final advancement bonus (always stacks on top of match points) ---
-    if (rp.adv && rp.adv > 0 && rp.advAlways) {
-      const actualHome = (a.homeTeam || '').trim().toLowerCase();
-      const actualAway = (a.awayTeam || '').trim().toLowerCase();
-      const teamsInActualMatch = new Set([actualHome, actualAway].filter(Boolean));
-      if (predHome && teamsInActualMatch.has(predHome.trim().toLowerCase())) koPts += rp.adv;
-      if (predAway && teamsInActualMatch.has(predAway.trim().toLowerCase())) koPts += rp.adv;
-    }
-  });
-
-  // Champion bonus (+10)
+  // Champion bonus (+10) — added on top of the Final
   const predictedChampion = p2Preds['champion']?.team || p.predictedChampion || null;
-  if (state.actualChampion && predictedChampion && String(predictedChampion).trim() === state.actualChampion) {
+  if (state.actualChampion && predictedChampion && _normTeam(predictedChampion) === _normTeam(state.actualChampion)) {
     koPts += 10;
+    championHit = true;
   }
 
-  // Perfect bracket bonus (+5)
-  if (perfectBracket && perfectMatchesNeeded >= 32 && perfectMatchesCorrect === perfectMatchesNeeded) {
-    koPts += 5;
-  }
+  // Perfect bracket (+5): every KO match played AND every winner called correctly
+  const allKOPlayed = WC2026_KO_FIXTURES.every(f => {
+    const a = state.koActualResults[f.id];
+    return a && a.home!==null && a.home!==undefined && a.home!=='';
+  });
+  perfectBracket = perfectBracket && allKOPlayed;
+  if (perfectBracket) koPts += 5;
 
-  return { groupMatchPts: gmp, exactScoresPts: esp, koPts, phase1Total: p1total, total: p1total + koPts, exactCount, resultCount, p2ExactCount, p2ResultCount, predictedChampion };
+  return { groupMatchPts: gmp, exactScoresPts: esp, koPts, phase1Total: p1total, total: p1total + koPts, exactCount, resultCount, p2ExactCount, p2ResultCount, predictedChampion, championHit, perfectBracket };
 }
 
 function getAllScores() {
@@ -1048,12 +961,14 @@ function getAllScores() {
     // so ties render in a consistent order, not to break the tie itself.
     .sort((a,b) => b.total - a.total || a.name.localeCompare(b.name));
 
-  // Sequential rank for display (1,2,3,4,5...) — every participant gets a distinct numbered
-  // position, no skipped numbers. Participants with equal totals are still flagged as tied
-  // (tiedWithAbove/tiedWithBelow) purely for the UI to show a "tied" hint and for prize money
-  // to be split equally per the tiebreaker rule — this does NOT affect the displayed number.
+  // Dense ranking: participants with equal totals share the SAME rank number,
+  // and the next distinct total gets the next number (95→#1, 94,94→#2, 90,90→#3,
+  // 89→#4, 88,88→#5 ...). tiedWithAbove/Below flags kept for the "(T)" hint and
+  // prize-money splitting.
+  let rank = 0, prevTotal = null;
   scores.forEach((s, i) => {
-    s.rank = i + 1;
+    if (s.total !== prevTotal) { rank++; prevTotal = s.total; }
+    s.rank = rank;
     s.tiedWithAbove = i > 0 && scores[i-1].total === s.total;
     s.tiedWithBelow = i < scores.length - 1 && scores[i+1].total === s.total;
   });
@@ -1635,22 +1550,44 @@ function refreshMyPicks() {
       html += `<div class="card" style="margin-top:16px">
         <div class="card-title">📋 Your Phase 2 Submissions</div>`;
 
+      // Perfect-bracket celebration banner
+      if (s1.perfectBracket) {
+        html += `<div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(168,85,247,0.12));border:1px solid rgba(255,215,0,0.5);border-radius:12px;padding:18px 20px;margin-bottom:16px;text-align:center;box-shadow:0 0 25px rgba(255,215,0,0.15)">
+          <div style="font-family:'Bebas Neue',cursive;font-size:26px;color:var(--gold);letter-spacing:2px">💎 PERFECTIONIST ALERT 💎</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">You called <strong style="color:var(--gold)">every single knockout winner</strong> — 32 for 32. <strong style="color:var(--accent)">+5 pts</strong> of pure clairvoyance 🔮</div>
+        </div>`;
+      }
+
       ['R32','R16','QF','SF','Final','3rd'].forEach(stage => {
-        const entries = byStage[stage];
-        if (!entries || !entries.length) return;
+        // Iterate the OFFICIAL fixtures for this stage (not just saved predictions)
+        // so matches with a missing prediction — e.g. the 3rd place play-off if the
+        // Excel row wasn't parsed — still show up instead of silently disappearing.
+        const fixturesInStage = WC2026_KO_FIXTURES.filter(f => f.stage === stage);
+        if (!fixturesInStage.length) return;
         html += `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px">${stageLabels[stage]||stage}</div>
           <div class="match-grid">`;
-        entries.forEach(({ mid, pred }) => {
-          const rp = stagePts[stage] || ROUND_PTS.R32;
+        fixturesInStage.forEach(fx => {
+          const mid = fx.id;
+          const pred = p2Preds[mid];
+          if (!pred) {
+            html += `<div class="ko-entry-card" style="opacity:0.55;border-style:dashed">
+              <div class="match-id">${mid} · ${stage}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin:8px 0">${resolveTeamName(fx.home)} vs ${resolveTeamName(fx.away)}</div>
+              <div style="font-size:11px;color:var(--orange);font-family:'JetBrains Mono',monospace">⚠️ No prediction saved — ask admin to unlock, then re-upload your bracket Excel</div>
+            </div>`;
+            return;
+          }
           const actual = state.koActualResults[mid];
-          const hasActual = actual && actual.home !== null && actual.home !== '';
-          let ptsBadge = '';
-          if (hasActual && pred.myHome !== '' && pred.myAway !== '') {
-            const ah=parseInt(actual.home),aa=parseInt(actual.away),ph=parseInt(pred.myHome),pa=parseInt(pred.myAway);
-            let pts = 0;
-            if (ph===ah&&pa===aa) pts=rp.correct+rp.exact;
-            else if ((ah>aa&&ph>pa)||(ah<aa&&ph<pa)||(ah===aa&&ph===pa)) pts=rp.correct;
-            ptsBadge = `<span style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
+          const hasActual = actual && actual.home !== null && actual.home !== undefined && actual.home !== '';
+          const r = scoreKOMatch(pred, actual, stage);
+          let ptsBadge = '', noteHtml = '';
+          if (r) {
+            ptsBadge = `<span style="padding:2px 8px;border-radius:6px;font-size:11px;font-family:'JetBrains Mono',monospace;background:${r.pts>1?'rgba(255,215,0,0.15)':r.pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${r.pts>1?'var(--gold)':r.pts===1?'var(--accent)':'var(--red)'}">+${r.pts}</span>`;
+            noteHtml = r.notes.map(n=>`<div style="margin-top:5px;font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace">${n}</div>`).join('');
+          }
+          // Champion bonus note directly on the Final match
+          if (mid === 'M104' && s1.championHit) {
+            noteHtml += `<div style="margin-top:5px;font-size:11px;color:var(--gold);font-family:'JetBrains Mono',monospace">🏆 +10 Champion bonus: ${s1.predictedChampion} lifted the trophy!</div>`;
           }
           const ht = pred.homeTeam || mid;
           const at = pred.awayTeam || '';
@@ -1664,6 +1601,7 @@ function refreshMyPicks() {
               <span style="font-weight:700;font-size:13px;text-align:right">${at}</span>
             </div>
             <div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${pens} ${hasActual?`Actual: ${actual.home}–${actual.away} ${ptsBadge}`:''}</div>
+            ${noteHtml}
           </div>`;
         });
         html += `</div>`;
@@ -1839,9 +1777,13 @@ function parseP2Excel(rows, filename) {
 
     if (!mid) return;
 
+    // The 3rd place row may be labelled "3rd" or "3rd/4th" in the Excel — it IS match M103.
+    // Without this mapping the row was silently skipped and the 3rd place pick never saved.
+    if (/^3rd/i.test(mid)) mid = 'M103';
+
     // Find the fixture definition for this match
     const fixture = WC2026_KO_FIXTURES.find(f => f.id === mid);
-    if (!fixture) return; // skip 3rd/4th row lookup variation
+    if (!fixture) return;
     const stage = fixture.stage;
 
     // Resolve actual team names: prefer admin-set bracket > excel > placeholder
@@ -2124,13 +2066,14 @@ function refreshDashboard() {
     <div class="stat-card"><div class="val">${tm}</div><div class="lbl">Matches Scored</div></div>
     <div class="stat-card"><div class="val">${72-tm>0?72-tm:0}</div><div class="lbl">Group Remaining</div></div>
     <div class="stat-card"><div class="val">${leader?leader.total:0}</div><div class="lbl">Top Score</div></div>`;
-  const top3=scores.slice(0,3); while(top3.length<3) top3.push(null);
-  const order=[top3[1],top3[0],top3[2]],cl=['podium-2','podium-1','podium-3'],lb=['2nd','1st','3rd'];
-  document.getElementById('podiumEl').innerHTML=order.map((p,i)=>p?`
-    <div class="podium-place ${cl[i]}">
-      <div class="podium-avatar">${getInitials(p.name)}</div>
-      <div class="podium-name">${p.name}</div>
-      <div class="podium-name" style="color:var(--gold);font-size:11px;">${p.total} Pts</div>
+  // Podium follows dense ranking: everyone sharing rank 1/2/3 stands on that step together
+  const rankGroup = r => scores.filter(s => s.rank === r);
+  const order=[rankGroup(2),rankGroup(1),rankGroup(3)],cl=['podium-2','podium-1','podium-3'],lb=['2nd','1st','3rd'];
+  document.getElementById('podiumEl').innerHTML=order.map((grp,i)=>grp.length?`
+    <div class="podium-place ${cl[i]}" style="${grp.length>1?'width:auto;min-width:110px;max-width:220px':''}">
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${grp.map(p=>`<div class="podium-avatar" title="${p.name}" ${grp.length>1?'style="width:44px;height:44px;font-size:14px"':''}>${getInitials(p.name)}</div>`).join('')}</div>
+      <div class="podium-name" title="${grp.map(p=>p.name).join(' · ')}">${grp.map(p=>p.name).join(' · ')}</div>
+      <div class="podium-name" style="color:var(--gold);font-size:11px;">${grp[0].total} Pts${grp.length>1?` · ${grp.length}-way tie`:''}</div>
       <div class="podium-block">${lb[i]}</div>
     </div>`:`<div class="podium-place ${cl[i]}"><div class="podium-avatar" style="opacity:.2">?</div><div class="podium-block">${lb[i]}</div></div>`).join('');
   document.getElementById('participantsGrid').innerHTML=scores.map((s)=>`
@@ -2142,6 +2085,68 @@ function refreshDashboard() {
       <div class="pts">${s.total} Pts</div>
     </div>`).join('');
   drawBar(scores);
+  renderPrizeBoard(scores);
+}
+
+// ============================================================
+// PRIZE MONEY BOARD — dense-rank based, ties split equally
+// ============================================================
+// Prize structure (per official announcement):
+//   Group Stage Winner (best Phase 1 total): Rs. 2,000
+//   Rank 1: 20,000 | Rank 2: 10,000 | Rank 3: 6,000 | Rank 4: 2,500 | Rank 5: 1,500
+// If more than one participant is eligible for a prize, the amount is divided
+// equally among everyone tied for it.
+const PRIZE_TIERS = [
+  { rank:1, amount:20000, icon:'🥇' },
+  { rank:2, amount:10000, icon:'🥈' },
+  { rank:3, amount:6000,  icon:'🥉' },
+  { rank:4, amount:2500,  icon:'4️⃣' },
+  { rank:5, amount:1500,  icon:'5️⃣' },
+];
+const GROUP_STAGE_PRIZE = 2000;
+
+function _fmtRs(n){
+  const r = Math.round(n*100)/100;
+  return 'Rs. ' + (Number.isInteger(r) ? r.toLocaleString('en-IN') : r.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}));
+}
+
+function renderPrizeBoard(scores){
+  const el = document.getElementById('prizeBoard');
+  if (!el || !scores.length) { if(el) el.innerHTML=''; return; }
+
+  const rowHtml = (icon, label, amount, winners) => {
+    const n = winners.length;
+    const share = n > 0 ? amount / n : amount;
+    const names = n
+      ? winners.map(w=>`<span style="font-weight:700">${w.name}</span>`).join('<span style="color:var(--text-muted)"> · </span>')
+      : '<span style="color:var(--text-muted)">—</span>';
+    const shareCell = n > 1
+      ? `<span style="color:var(--accent);font-weight:700">${_fmtRs(share)}</span> <span style="color:var(--text-muted);font-size:11px">each (${_fmtRs(amount)} ÷ ${n})</span>`
+      : `<span style="color:var(--accent);font-weight:700">${_fmtRs(amount)}</span>`;
+    return `<tr>
+      <td style="white-space:nowrap">${icon} ${label}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--gold)">${_fmtRs(amount)}</td>
+      <td>${names}${n>1?` <span style="font-size:10px;color:var(--gold);font-family:'JetBrains Mono',monospace">(${n}-way tie)</span>`:''}</td>
+      <td style="font-family:'JetBrains Mono',monospace;white-space:nowrap">${shareCell}</td>
+    </tr>`;
+  };
+
+  let html = `<div style="overflow-x:auto"><table class="pts-table" style="width:100%">
+    <tr><th>Prize</th><th>Pot</th><th>Currently Eligible</th><th>Payout</th></tr>`;
+
+  // Group Stage Winner — best Phase 1 total (independent of overall rank)
+  const bestP1 = Math.max(...scores.map(s=>s.phase1Total));
+  const p1Winners = scores.filter(s=>s.phase1Total===bestP1 && bestP1>0);
+  html += rowHtml('⚽','Group Stage Winner', GROUP_STAGE_PRIZE, p1Winners);
+
+  // Overall ranks 1–5 (dense ranking — everyone sharing a rank splits that pot)
+  PRIZE_TIERS.forEach(t=>{
+    html += rowHtml(t.icon, 'Rank '+t.rank, t.amount, scores.filter(s=>s.rank===t.rank));
+  });
+
+  html += `</table></div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:8px;font-family:'JetBrains Mono',monospace">Standings are live — final payouts are based on the final leaderboard after the tournament ends.</p>`;
+  el.innerHTML = html;
 }
 
 function drawBar(scores) {
@@ -2227,71 +2232,57 @@ function showDetail(name) {
   if (!hasSomePreds) {
     koPicksHtml += '<p style="color:var(--text-muted);font-size:13px;">No Phase 2 predictions uploaded yet.</p>';
   } else {
+    // Perfect-bracket celebration banner — every KO winner called
+    if (s.perfectBracket) {
+      koPicksHtml += `<div style="background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(168,85,247,0.12));border:1px solid rgba(255,215,0,0.5);border-radius:12px;padding:16px 18px;margin-bottom:14px;text-align:center;box-shadow:0 0 25px rgba(255,215,0,0.15)">
+        <div style="font-family:'Bebas Neue',cursive;font-size:24px;color:var(--gold);letter-spacing:2px">💎 PERFECTIONIST ALERT 💎</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Every single knockout winner called — 32 for 32. <strong style="color:var(--accent)">+5 pts</strong> of pure clairvoyance 🔮</div>
+      </div>`;
+    }
     // Group by stage using WC2026_KO_FIXTURES as the authoritative structure
     const stageOrder = ['R32','R16','QF','SF','Final','3rd'];
     const stageLabels = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-Finals', SF:'Semi-Finals', Final:'Final', '3rd':'3rd Place Play-Off' };
 
     stageOrder.forEach(stage => {
       const matchesInStage = WC2026_KO_FIXTURES.filter(f => f.stage === stage);
-      // Only show this stage if user has predictions for at least one match
-      const stageEntries = matchesInStage.filter(f => p2Preds[f.id]);
-      if (!stageEntries.length) return;
+      if (!matchesInStage.length) return;
 
       koPicksHtml += `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--neon-blue);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px">${stageLabels[stage]}</div>`;
       koPicksHtml += `<div class="ko-picks-grid">`;
 
-      stageEntries.forEach(fixture => {
+      matchesInStage.forEach(fixture => {
         const pred = p2Preds[fixture.id];
-        if (!pred) return;
+        if (!pred) {
+          // Show missing predictions (e.g. 3rd place if the Excel row wasn't parsed)
+          // instead of hiding the match entirely.
+          koPicksHtml += `<div class="ko-pick-item" style="opacity:0.55;border-style:dashed">
+            <div class="ko-pick-stage">${fixture.id} · ${stage}</div>
+            <div class="ko-pick-teams">${resolveTeamName(fixture.home)} vs ${resolveTeamName(fixture.away)}</div>
+            <div style="font-size:11px;color:var(--orange);font-family:'JetBrains Mono',monospace;margin-top:4px">⚠️ No prediction saved</div>
+          </div>`;
+          return;
+        }
 
         // Use team names saved with the prediction (from when user uploaded xlsx)
         const homeTeam = pred.homeTeam || fixture.home;
         const awayTeam = pred.awayTeam || fixture.away;
 
         const actual = state.koActualResults[fixture.id];
-        const hasActual = actual && actual.home !== '' && actual.home !== null;
+        const hasActual = actual && actual.home !== '' && actual.home !== null && actual.home !== undefined;
         const mh = parseInt(pred.myHome), ma = parseInt(pred.myAway);
         const hasPred = !isNaN(mh) && !isNaN(ma);
 
-        let resCls = '';
-        let ptsBadge = '';
-        if (hasActual && hasPred) {
-          const ah=parseInt(actual.home), aa=parseInt(actual.away);
-          const rp = ROUND_PTS[stage] || ROUND_PTS['R32'];
-          let pts = 0;
-          const isExactHere = (mh===ah && ma===aa);
-          const isCorrectHere = !isExactHere && ((ah>aa&&mh>ma)||(ah<aa&&mh<ma)||(ah===aa&&mh===ma));
-          const actualWentToPensHere = (ah === aa);
-          const predictedDrawHere = (mh === ma);
-          const predictedPenWinnerTeam = pred.penWinner === 'H' ? homeTeam : pred.penWinner === 'A' ? awayTeam : null;
-          const actualWinnerTeam = actual.winner || (ah>aa ? (actual.homeTeam||homeTeam) : aa>ah ? (actual.awayTeam||awayTeam) : null);
-
-          if (predictedDrawHere) {
-            if (actualWentToPensHere && isExactHere) {
-              if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
-                resCls='pred-result-exact'; pts=rp.correct+rp.exact;   // exact draw + correct pens winner
-              } else {
-                resCls='pred-result-correct'; pts=rp.exact;             // exact draw + wrong pens winner
-              }
-            } else if (predictedPenWinnerTeam && actualWinnerTeam && predictedPenWinnerTeam === actualWinnerTeam) {
-              resCls='pred-result-correct'; pts=rp.correct;             // wrong score but correct winner picked via pens
-            } else {
-              resCls='pred-result-wrong'; pts=0;
-            }
-          } else {
-            // Outright winner predicted
-            const predictedOutrightWinnerTeam = mh > ma ? homeTeam : awayTeam;
-            if (!actualWentToPensHere) {
-              if (isExactHere) { resCls='pred-result-exact'; pts=rp.correct+rp.exact; }
-              else if (isCorrectHere) { resCls='pred-result-correct'; pts=rp.correct; }
-              else { resCls='pred-result-wrong'; pts=0; }
-            } else {
-              // Match went to pens — house rule: correct predicted winner still earns correct-winner pt
-              if (predictedOutrightWinnerTeam && actualWinnerTeam && predictedOutrightWinnerTeam === actualWinnerTeam) { resCls='pred-result-correct'; pts=rp.correct; }
-              else { resCls='pred-result-wrong'; pts=0; }
-            }
-          }
-          ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${pts>1?'rgba(255,215,0,0.15)':pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${pts>1?'var(--gold)':pts===1?'var(--accent)':'var(--red)'}">+${pts}</span>`;
+        // Shared scorer — identical rules to the leaderboard engine
+        const r = scoreKOMatch(pred, actual, stage);
+        let resCls = '', ptsBadge = '', noteHtml = '';
+        if (r) {
+          resCls = r.cls;
+          ptsBadge = `<span style="margin-left:6px;padding:2px 7px;border-radius:5px;font-size:11px;background:${r.pts>1?'rgba(255,215,0,0.15)':r.pts===1?'rgba(56,239,125,0.12)':'rgba(255,71,87,0.1)'};color:${r.pts>1?'var(--gold)':r.pts===1?'var(--accent)':'var(--red)'}">+${r.pts}</span>`;
+          noteHtml = r.notes.map(n=>`<div style="margin-top:4px;font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace">${n}</div>`).join('');
+        }
+        // Champion bonus note directly on the Final match
+        if (fixture.id === 'M104' && s.championHit) {
+          noteHtml += `<div style="margin-top:4px;font-size:10px;color:var(--gold);font-family:'JetBrains Mono',monospace">🏆 +10 Champion bonus: ${s.predictedChampion} lifted the trophy!</div>`;
         }
 
         const penStr = pred.penWinner ? ` <span style="color:var(--text-muted);font-size:10px">(Pens: ${pred.penWinner})</span>` : '';
@@ -2301,6 +2292,7 @@ function showDetail(name) {
           <div class="ko-pick-teams">${homeTeam} vs ${awayTeam}</div>
           <div class="ko-pick-prediction ${resCls}">${hasPred ? `${mh} – ${ma}` : '—'}${penStr}</div>
           ${hasActual ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;font-family:'JetBrains Mono',monospace">Actual: ${actual.home}–${actual.away} ${ptsBadge}</div>` : ''}
+          ${noteHtml}
         </div>`;
       });
 
